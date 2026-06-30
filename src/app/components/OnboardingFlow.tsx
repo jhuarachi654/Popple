@@ -68,7 +68,7 @@ export function AddTasksVisual() {
   return (
     <div className="w-64 pixel-notebook rounded-2xl shadow-lg border border-white/60 overflow-hidden">
       {/* Input row — mirrors the sticky input section in TodoListScreen */}
-      <div className="border-b border-white/60 px-3 py-3">
+      <div className="border-b border-white/60 px-3 py-3 bg-white relative z-10">
         <div className="flex items-center gap-2">
           <div className="flex-1 min-w-0 bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 flex items-center min-h-[30px] overflow-hidden">
             {typed ? (

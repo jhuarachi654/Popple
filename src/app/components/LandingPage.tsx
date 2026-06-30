@@ -424,19 +424,31 @@ function LandingFooter({ onEnter, onGuestMode }: { onEnter: () => void; onGuestM
       className="relative bg-gray-950 overflow-hidden cursor-pointer select-none"
     >
       {/* ── CTA + Links ── */}
-      <div className="px-8 pt-14 pb-12 flex items-start justify-between gap-8">
-        {/* Left: header + body */}
-        <div className="flex flex-col gap-4 max-w-[55%]">
-          <p className="font-pixel text-2xl text-white leading-snug">
+      <div className="px-8 pt-14 pb-12 flex flex-col md:flex-row items-start justify-between gap-8">
+        {/* Header + body + links stacked on mobile, split on desktop */}
+        <div className="flex flex-col gap-4 md:max-w-[55%]">
+          <p className="font-pixel text-lg md:text-2xl text-white leading-snug">
             Your tasks deserve more than a checkmark.
           </p>
           <p className="font-space-mono text-xs text-gray-500 leading-relaxed">
             Sign up to save your progress, build a streak, and climb 50 levels — one pop at a time.
           </p>
+          {/* Links — below body on mobile, hidden here on desktop */}
+          <div className="flex flex-col gap-3 md:hidden pt-2">
+            <button onClick={e => { e.stopPropagation(); onEnter(); }} className="font-space-mono text-xs text-gray-300 hover:text-white transition-colors text-left">
+              Start today →
+            </button>
+            <button onClick={e => { e.stopPropagation(); onGuestMode(); }} className="font-space-mono text-xs text-gray-500 hover:text-gray-300 transition-colors text-left">
+              Try as guest →
+            </button>
+            <button onClick={e => e.stopPropagation()} className="font-space-mono text-xs text-gray-500 hover:text-gray-300 transition-colors text-left">
+              How it works →
+            </button>
+          </div>
         </div>
 
-        {/* Right: links */}
-        <div className="flex flex-col gap-3 items-end">
+        {/* Links — right side on desktop only */}
+        <div className="hidden md:flex flex-col gap-3 items-end">
           <button onClick={e => { e.stopPropagation(); onEnter(); }} className="font-space-mono text-xs text-gray-300 hover:text-white transition-colors text-right">
             Start today →
           </button>
@@ -502,12 +514,12 @@ export default function LandingPage({ onEnter, onGuestMode }: LandingPageProps) 
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="pixel-notebook rounded-2xl shadow-2xl px-10 py-10 flex flex-col items-center gap-4 text-center w-full"
+            className="pixel-notebook rounded-2xl shadow-2xl px-6 py-8 md:px-10 md:py-10 flex flex-col items-center gap-4 text-center w-full"
             style={{ border: '1px solid rgba(255,255,255,0.6)' }}
           >
             <h1 className="font-pixel text-4xl text-gray-900 tracking-wider leading-snug">Popple</h1>
-            <p className="font-space-mono text-sm text-gray-500 leading-relaxed">
-              Your productivity, made visible.
+            <p className="font-space-mono text-xs md:text-sm text-gray-500 leading-relaxed">
+              A cute retro to-do list that turns your tasks into bubbles you get to pop.
             </p>
           </motion.div>
 
@@ -534,27 +546,17 @@ export default function LandingPage({ onEnter, onGuestMode }: LandingPageProps) 
       <section
         className="relative overflow-hidden"
         style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.98)',
+          backgroundColor: 'rgba(255, 255, 255, 1)',
           backgroundImage: `
             repeating-linear-gradient(
               0deg,
               transparent 0px,
-              transparent 23px,
-              rgba(6, 182, 212, 0.12) 24px,
-              rgba(6, 182, 212, 0.12) 26px,
-              transparent 27px,
-              transparent 31px
-            ),
-            linear-gradient(
-              90deg,
-              transparent 0px,
-              transparent 39px,
-              rgba(6, 182, 212, 0.18) 40px,
-              rgba(6, 182, 212, 0.18) 42px,
-              transparent 43px
+              transparent 31px,
+              rgba(147, 210, 230, 0.5) 31px,
+              rgba(147, 210, 230, 0.5) 32px
             )
           `,
-          backgroundSize: '100% 32px, 100% 100%',
+          backgroundSize: '100% 32px',
         }}
       >
         <div className="absolute inset-0 bg-transparent" />
@@ -569,22 +571,21 @@ export default function LandingPage({ onEnter, onGuestMode }: LandingPageProps) 
             className="px-8 pt-12 pb-6 flex flex-col items-center text-center"
           >
             <p className="font-space-mono text-[10px] text-cyan-600 uppercase tracking-widest mb-3">How it works</p>
-            <p className="font-pixel text-2xl text-gray-900 leading-snug">Three steps to a better list.</p>
+            <p className="font-pixel text-lg md:text-2xl text-gray-900 leading-snug">Three steps to a better list.</p>
           </motion.div>
 
           {/* Chapter 1 — text from left, visual from right */}
           <div className="border-t border-cyan-100">
-            <div className="flex flex-col md:flex-row items-center justify-center md:gap-32 gap-3 py-10 md:py-14 px-4 md:px-0" style={{ minHeight: 252 }}>
+            <div className="flex flex-col md:flex-row items-center justify-center md:gap-32 gap-3 py-10 md:py-14 px-6 md:px-0" style={{ minHeight: 252 }}>
               <motion.div
                 initial={{ opacity: 0, x: -48 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, margin: '-60px' }}
                 transition={{ duration: 0.55, ease: 'easeOut' }}
-                className="flex-shrink-0 flex flex-col gap-3"
-                style={{ width: 'min(260px, 100%)' }}
+                className="flex-shrink-0 flex flex-col gap-3 w-full md:w-[260px]"
               >
                 <p className="font-space-mono text-xs text-cyan-600 uppercase tracking-widest">01</p>
-                <p className="font-pixel text-2xl text-gray-900 leading-snug">Add your<br />tasks.</p>
+                <p className="font-pixel text-lg md:text-2xl text-gray-900 leading-snug">Add your<br />tasks.</p>
                 <p className="font-space-mono text-sm text-gray-500 leading-relaxed">
                   Type what you need to do. Big or small, everything goes in.
                 </p>
@@ -594,10 +595,10 @@ export default function LandingPage({ onEnter, onGuestMode }: LandingPageProps) 
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, margin: '-60px' }}
                 transition={{ duration: 0.55, ease: 'easeOut', delay: 0.1 }}
-                className="flex-shrink-0"
+                className="w-full md:w-auto"
               >
-                <div className="bg-gray-800 rounded-3xl border-2 border-gray-700 flex items-center justify-center" style={{ width: 'min(432px, calc(100vw - 32px))', height: 288 }}>
-                  <div style={{ zoom: 1.5 }}><AddTasksVisual /></div>
+                <div className="bg-gray-800 rounded-3xl border-2 border-gray-700 flex items-center justify-center p-6 md:p-0 w-full md:w-[432px] md:h-[288px]">
+                  <div className="scale-100 md:scale-[1.5] md:origin-center"><AddTasksVisual /></div>
                 </div>
               </motion.div>
             </div>
@@ -605,16 +606,16 @@ export default function LandingPage({ onEnter, onGuestMode }: LandingPageProps) 
 
           {/* Chapter 2 — visual from left, text from right */}
           <div className="border-t border-cyan-100">
-            <div className="flex flex-col md:flex-row items-center justify-center md:gap-32 gap-3 py-10 md:py-14 px-4 md:px-0" style={{ minHeight: 252 }}>
+            <div className="flex flex-col md:flex-row items-center justify-center md:gap-32 gap-3 py-10 md:py-14 px-6 md:px-0" style={{ minHeight: 252 }}>
               <motion.div
                 initial={{ opacity: 0, x: -48 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, margin: '-60px' }}
                 transition={{ duration: 0.55, ease: 'easeOut' }}
-                className="flex-shrink-0"
+                className="w-full md:w-auto order-2 md:order-1"
               >
-                <div className="bg-gray-800 rounded-3xl border-2 border-gray-700 flex items-center justify-center" style={{ width: 'min(432px, calc(100vw - 32px))', height: 288 }}>
-                  <div style={{ zoom: 1.5 }}><CheckOffVisual /></div>
+                <div className="bg-gray-800 rounded-3xl border-2 border-gray-700 flex items-center justify-center p-6 md:p-0 w-full md:w-[432px] md:h-[288px]">
+                  <div className="scale-100 md:scale-[1.5] md:origin-center"><CheckOffVisual /></div>
                 </div>
               </motion.div>
               <motion.div
@@ -622,11 +623,10 @@ export default function LandingPage({ onEnter, onGuestMode }: LandingPageProps) 
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, margin: '-60px' }}
                 transition={{ duration: 0.55, ease: 'easeOut', delay: 0.1 }}
-                className="flex-shrink-0 flex flex-col gap-3"
-                style={{ width: 'min(260px, 100%)' }}
+                className="flex-shrink-0 flex flex-col gap-3 w-full md:w-[260px] order-1 md:order-2"
               >
                 <p className="font-space-mono text-xs text-cyan-600 uppercase tracking-widest">02</p>
-                <p className="font-pixel text-2xl text-gray-900 leading-snug">Watch it<br />come alive.</p>
+                <p className="font-pixel text-lg md:text-2xl text-gray-900 leading-snug">Watch it<br />come alive.</p>
                 <p className="font-space-mono text-sm text-gray-500 leading-relaxed">
                   Mark it done. It leaves your list and floats into your space as a bubble.
                 </p>
@@ -636,17 +636,16 @@ export default function LandingPage({ onEnter, onGuestMode }: LandingPageProps) 
 
           {/* Chapter 3 — text from left, visual drops in with scale */}
           <div className="border-t border-cyan-100 pb-14">
-            <div className="flex flex-col md:flex-row items-center justify-center md:gap-32 gap-3 py-10 md:py-14 px-4 md:px-0" style={{ minHeight: 252 }}>
+            <div className="flex flex-col md:flex-row items-center justify-center md:gap-32 gap-3 py-10 md:py-14 px-6 md:px-0" style={{ minHeight: 252 }}>
               <motion.div
                 initial={{ opacity: 0, x: -48 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, margin: '-60px' }}
                 transition={{ duration: 0.55, ease: 'easeOut' }}
-                className="flex-shrink-0 flex flex-col gap-3"
-                style={{ width: 'min(260px, 100%)' }}
+                className="flex-shrink-0 flex flex-col gap-3 w-full md:w-[260px]"
               >
                 <p className="font-space-mono text-xs text-cyan-600 uppercase tracking-widest">03</p>
-                <p className="font-pixel text-2xl text-gray-900 leading-snug">Pop it.</p>
+                <p className="font-pixel text-lg md:text-2xl text-gray-900 leading-snug">Pop it.</p>
                 <p className="font-space-mono text-sm text-gray-500 leading-relaxed">
                   Tap to destroy it. Earn XP. Climb 50 levels.
                 </p>
@@ -656,10 +655,10 @@ export default function LandingPage({ onEnter, onGuestMode }: LandingPageProps) 
                 whileInView={{ opacity: 1, scale: 1, y: 0 }}
                 viewport={{ once: true, margin: '-60px' }}
                 transition={{ duration: 0.6, ease: [0.34, 1.56, 0.64, 1], delay: 0.1 }}
-                className="flex-shrink-0"
+                className="w-full md:w-auto"
               >
-                <div className="bg-gray-800 rounded-3xl border-2 border-gray-700 flex items-center justify-center" style={{ width: 'min(432px, calc(100vw - 32px))', height: 288 }}>
-                  <div style={{ zoom: 1.5 }}><PopItVisual /></div>
+                <div className="bg-gray-800 rounded-3xl border-2 border-gray-700 flex items-center justify-center p-6 md:p-0 w-full md:w-[432px] md:h-[288px]">
+                  <div className="scale-100 md:scale-[1.5] md:origin-center"><PopItVisual /></div>
                 </div>
               </motion.div>
             </div>
@@ -696,8 +695,8 @@ export default function LandingPage({ onEnter, onGuestMode }: LandingPageProps) 
         >
           <div className="pixel-notebook w-full rounded-2xl px-6 py-6 flex flex-col gap-4">
             <p className="font-space-mono text-[10px] text-cyan-600 uppercase tracking-widest">Why Popple</p>
-            <p className="font-pixel text-2xl text-gray-900 leading-snug">
-              Born from a love of lists and a need for joy.
+            <p className="font-pixel text-lg md:text-2xl text-gray-900 leading-snug">
+              Lists, but make them delightful.
             </p>
             <p className="font-space-mono text-sm text-gray-700 leading-relaxed">
               "I have always used to-do lists — digital, paper, even on my hand. I wanted to make a delightful to-do list that does not require a lot of effort. And that is how Popple came to be."
@@ -718,7 +717,7 @@ export default function LandingPage({ onEnter, onGuestMode }: LandingPageProps) 
       </motion.section>
 
       {/* ── FAQ ── */}
-      <section className="pixel-notebook border-t border-cyan-100 px-6 py-14 flex flex-col gap-6">
+      <section className="pixel-notebook border-t border-cyan-100 px-6 md:pl-16 md:pr-6 py-14 flex flex-col gap-6">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -727,7 +726,7 @@ export default function LandingPage({ onEnter, onGuestMode }: LandingPageProps) 
           className="flex flex-col gap-2"
         >
           <p className="font-space-mono text-[10px] text-cyan-600 uppercase tracking-widest">FAQ</p>
-          <p className="font-pixel text-2xl text-gray-900 leading-snug">Good questions.</p>
+          <p className="font-pixel text-lg md:text-2xl text-gray-900 leading-snug">Good questions.</p>
         </motion.div>
         <motion.div
           initial={{ opacity: 0, y: 24 }}
