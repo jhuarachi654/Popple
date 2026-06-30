@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node_modules/.bin/vite build *)",
+      "Bash(npx tsc *)",
+      "Bash(mkdir -p /Users/johannahuarachi/Desktop/Popple/worker/src)",
+      "Bash(wrangler deploy *)",
+      "Bash(wrangler pages *)",
+      "Bash(open /Users/johannahuarachi/Desktop/Popple/src/app/components/TodoListScreen.tsx)",
+      "Bash(npm run *)",
+      "Read(//Users/johannahuarachi/Desktop/**)",
+      "Bash(cp \"/Users/johannahuarachi/Desktop/Me photos/IMG_9435 Medium.jpeg\" /Users/johannahuarachi/Desktop/Popple/src/assets/johanna.jpeg)",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
+    ],
+    "additionalDirectories": [
+      "/Users/johannahuarachi/Desktop/Popple/worker",
+      "/Users/johannahuarachi/Desktop/Me photos"
+    ]
+  }
+}

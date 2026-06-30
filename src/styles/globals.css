@@ -1,0 +1,928 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 16px;
+  --background: #ffffff;
+  --foreground: oklch(0.145 0 0);
+  --card: #ffffff;
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: #030213;
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.95 0.0058 264.53);
+  --secondary-foreground: #030213;
+  --muted: #ececf0;
+  --muted-foreground: #717182;
+  --accent: #e9ebef;
+  --accent-foreground: #030213;
+  --destructive: #d4183d;
+  --destructive-foreground: #ffffff;
+  --border: rgba(0, 0, 0, 0.1);
+  --input: transparent;
+  --input-background: #f3f3f5;
+  --switch-background: #cbced4;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: #030213;
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.145 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: oklch(0.269 0 0);
+  --input: oklch(0.269 0 0);
+  --ring: oklch(0.439 0 0);
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.269 0 0);
+  --sidebar-ring: oklch(0.439 0 0);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+    /* Ensure safe areas are respected on iOS */
+    min-height: 100dvh;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Press Start 2P', monospace;
+  }
+
+  /* Ensure the app root fills the full dynamic viewport */
+  #root {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+/**
+ * Base typography. This is not applied to elements which have an ancestor with a Tailwind text class.
+ */
+@layer base {
+  :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) {
+    h1 {
+      font-size: var(--text-2xl);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    h2 {
+      font-size: var(--text-xl);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    h3 {
+      font-size: var(--text-lg);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    h4 {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    p {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-normal);
+      line-height: 1.5;
+    }
+
+    label {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    button {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    input {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-normal);
+      line-height: 1.5;
+    }
+  }
+}
+
+html {
+  font-size: var(--font-size);
+}
+
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+  body {
+    -webkit-overflow-scrolling: touch;
+    overflow-scrolling: touch;
+  }
+}
+
+/* Pixelated game elements */
+.pixelated {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* Glass morphism effects */
+.glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.glass-strong {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.glass-subtle {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Pixelated 8-bit background patterns */
+.pixel-cityscape {
+  background-image: 
+    linear-gradient(90deg, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+    linear-gradient(0deg, rgba(37, 99, 235, 0.1) 0%, transparent 50%);
+  background-size: 8px 8px, 12px 12px;
+  image-rendering: pixelated;
+}
+
+.pixel-home {
+  background-image: 
+    linear-gradient(45deg, rgba(34, 197, 94, 0.1) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(34, 197, 94, 0.1) 25%, transparent 25%);
+  background-size: 16px 16px, 16px 16px;
+  background-position: 0 0, 8px 8px;
+  image-rendering: pixelated;
+}
+
+.pixel-dreamy {
+  background-image: 
+    radial-gradient(circle at 25% 25%, rgba(168, 85, 247, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(59, 130, 246, 0.1) 0%, transparent 50%);
+  background-size: 20px 20px, 24px 24px;
+  image-rendering: pixelated;
+}
+
+/* 8-bit Pixelated Notebook Paper Background - Accessibility Improved */
+.pixel-notebook {
+  position: relative;
+  background-color: rgba(255, 255, 255, 0.98);
+  background-image: 
+    /* Horizontal ruled lines - more visible but still subtle */
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 23px,
+      rgba(6, 182, 212, 0.12) 24px, /* more visible teal/cyan lines */
+      rgba(6, 182, 212, 0.12) 26px,
+      transparent 27px,
+      transparent 31px
+    ),
+    /* Left margin line - more visible */
+    linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent 39px,
+      rgba(6, 182, 212, 0.18) 40px,
+      rgba(6, 182, 212, 0.18) 42px,
+      transparent 43px
+    );
+  background-size: 100% 32px, 100% 100%;
+  image-rendering: pixelated;
+  -webkit-image-rendering: pixelated;
+  -moz-image-rendering: crisp-edges;
+}
+
+.pixel-notebook::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  background-image: 
+    /* 8-bit spiral binding holes - more visible */
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 12px,
+      rgba(6, 182, 212, 0.15) 13px,
+      rgba(6, 182, 212, 0.15) 19px,
+      transparent 20px,
+      transparent 32px
+    );
+  background-size: 8px 32px;
+  image-rendering: pixelated;
+  -webkit-image-rendering: pixelated;
+  -moz-image-rendering: crisp-edges;
+  z-index: 1;
+}
+
+/* Content area backgrounds for better accessibility */
+.notebook-content-area {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 12px;
+  position: relative;
+  z-index: 2;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
+}
+
+/* Strong content backgrounds for critical UI elements */
+.notebook-content-strong {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 8px;
+  position: relative;
+  z-index: 3;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* Semi-transparent overlays for better text readability */
+.text-overlay {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin: -8px -12px;
+}
+
+/* Safe area utilities for mobile */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Typography classes */
+.font-space-mono {
+  font-family: 'Space Mono', monospace;
+}
+
+.font-inter {
+  font-family: 'Inter', sans-serif;
+}
+
+.font-pixel {
+  font-family: 'Press Start 2P', monospace;
+  image-rendering: pixelated;
+}
+
+/* Touch-friendly interactions */
+@media (hover: none) and (pointer: coarse) {
+  .hover\:shadow-xl:hover {
+    box-shadow: none;
+  }
+  
+  .hover\:shadow-md:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+  
+  /* Enhanced drag and drop for touch devices */
+  .touch-manipulation {
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+  
+  /* Larger touch targets for mobile */
+  [role="button"], button, .cursor-move {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Prevent text selection during drag */
+  .dragging * {
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+  }
+  
+  /* Better visual feedback for touch */
+  .drag-handle-mobile {
+    padding: 8px;
+    margin: -8px;
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
+  }
+  
+  .drag-handle-mobile:active {
+    background-color: rgba(6, 182, 212, 0.1);
+    transform: scale(1.05);
+  }
+}
+
+/* Enhanced Drag and Drop Visual System */
+.drag-preview {
+  transform: rotate(3deg) scale(1.05);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  border: 2px solid #06b6d4;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+}
+
+/* Edit Text Area Styling */
+.edit-text-area {
+  position: relative;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.edit-zone {
+  position: relative;
+}
+
+/* Global drag mode styles */
+.dragging-active {
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+}
+
+.dragging-active * {
+  cursor: grabbing !important;
+  pointer-events: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+
+.dragging-active .reorderable-task {
+  pointer-events: auto !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+
+/* Enhanced drop zone indicators */
+.drop-indicator {
+  position: relative;
+  background: linear-gradient(90deg, #06b6d4, #22d3ee, #06b6d4);
+  border-radius: 9999px;
+  box-shadow: 
+    0 0 16px rgba(6, 182, 212, 0.8),
+    0 0 32px rgba(6, 182, 212, 0.4);
+  animation: dropIndicatorPulse 1.5s ease-in-out infinite;
+}
+
+/* Dedicated drop zones at list edges */
+.drop-zone-top,
+.drop-zone-bottom {
+  pointer-events: none;
+  z-index: 20;
+  position: relative;
+  margin: 8px 0;
+}
+
+.drop-zone-top.active,
+.drop-zone-bottom.active {
+  pointer-events: auto;
+}
+
+@keyframes dropIndicatorPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scaleX(1.05);
+  }
+}
+
+.drop-indicator::before,
+.drop-indicator::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 10px;
+  background: radial-gradient(circle, #22d3ee, #06b6d4);
+  border-radius: 50%;
+  box-shadow: 
+    0 0 12px rgba(6, 182, 212, 1),
+    0 0 24px rgba(34, 211, 238, 0.6);
+  animation: dropIndicatorDots 1s ease-in-out infinite alternate;
+}
+
+@keyframes dropIndicatorDots {
+  0% {
+    transform: translateY(-50%) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-50%) scale(1.2);
+    opacity: 0.7;
+  }
+}
+
+.drop-indicator::before {
+  left: -5px;
+  animation-delay: 0.2s;
+}
+
+.drop-indicator::after {
+  right: -5px;
+  animation-delay: 0.4s;
+}
+
+/* Smooth dragging animations */
+.draggable-item {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  will-change: transform;
+}
+
+.draggable-item.is-dragging {
+  transform: scale(1.05) rotate(2deg);
+  box-shadow: 0 12px 30px rgba(6, 182, 212, 0.3);
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #06b6d4;
+}
+
+.draggable-item.is-over {
+  background: rgba(6, 182, 212, 0.05);
+  border: 1px dashed #06b6d4;
+  transform: translateY(-2px);
+}
+
+/* Enhanced mobile-specific drag improvements */
+@media (max-width: 768px) {
+  .draggable-item.is-dragging {
+    transform: scale(1.08) rotate(3deg);
+    box-shadow: 0 15px 35px rgba(6, 182, 212, 0.4);
+  }
+  
+  .drop-indicator {
+    height: 4px;
+    box-shadow: 
+      0 0 20px rgba(6, 182, 212, 0.9),
+      0 0 40px rgba(6, 182, 212, 0.5);
+  }
+  
+  /* Enhanced mobile task touch targets */
+  .reorderable-task {
+    min-height: unset;
+    margin-bottom: 2px;
+  }
+
+  .reorderable-task > div {
+    min-height: unset;
+    padding: 2px 8px;
+  }
+  
+  /* Better mobile drag feedback */
+  .reorderable-task.is-dragging {
+    transform: scale(1.08) rotate(2deg) translateY(-8px);
+    box-shadow: 
+      0 20px 40px rgba(6, 182, 212, 0.5),
+      0 10px 20px rgba(0, 0, 0, 0.3);
+    border: 2px solid #22d3ee;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(12px);
+    z-index: 1000;
+  }
+  
+  /* Mobile-optimized hover zones */
+  .reorderable-task.is-over {
+    background: rgba(6, 182, 212, 0.08);
+    transform: translateY(-2px) scale(1.02);
+    border: 2px dashed #06b6d4;
+    transition: all 0.2s ease;
+  }
+  
+  /* Larger touch targets for better mobile UX */
+  .mobile-drag-handle {
+    min-width: 40px;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    touch-action: manipulation;
+  }
+  
+  .mobile-drag-handle:active {
+    background: rgba(6, 182, 212, 0.15);
+    transform: scale(1.15);
+  }
+  
+  /* Improved mobile scrolling during drag */
+  .custom-scrollbar {
+    scroll-behavior: smooth;
+  }
+  
+  /* Enhanced mobile feedback states */
+  .touch-feedback {
+    transition: all 0.1s ease;
+  }
+  
+  .touch-feedback:active {
+    transform: scale(0.98);
+    background: rgba(6, 182, 212, 0.1);
+  }
+}
+
+/* Smooth animations */
+* {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Toast positioning - Let Sonner handle most positioning, just ensure proper z-index */
+[data-sonner-toaster] {
+  z-index: 60 !important; /* Higher than navigation (z-50) */
+  pointer-events: none !important;
+}
+
+/* Override max-width for better mobile experience */
+.toast-tasks-screen [data-sonner-toaster],
+.toast-game-screen [data-sonner-toaster] {
+  max-width: min(400px, calc(100vw - 32px)) !important;
+}
+
+/* Simplified toast stacking - let Sonner handle positioning, just style appearance */
+[data-sonner-toast] {
+  /* Let Sonner handle spacing and positioning naturally */
+  transform-origin: center !important;
+  backface-visibility: hidden !important;
+}
+
+/* Custom entrance animations that work with Sonner's stacking - all from bottom now */
+.toast-tasks-screen [data-sonner-toast] {
+  animation: slideInBottom 0.4s cubic-bezier(0.34, 1.26, 0.64, 1) !important;
+}
+
+.toast-game-screen [data-sonner-toast] {
+  animation: slideInBottom 0.4s cubic-bezier(0.34, 1.26, 0.64, 1) !important;
+}
+
+/* Default animation for other screens */
+[data-sonner-toast]:not(.toast-tasks-screen):not(.toast-game-screen) {
+  animation: slideInBottom 0.4s cubic-bezier(0.34, 1.26, 0.64, 1) !important;
+}
+
+/* Simplified animations that work with Sonner's stacking */
+@keyframes slideInRight {
+  0% {
+    opacity: 0;
+    transform: translateX(100%) scale(0.95);
+  }
+  70% {
+    transform: translateX(-8%) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes slideInTop {
+  0% {
+    opacity: 0;
+    transform: translateY(-100%) scale(0.95);
+  }
+  70% {
+    transform: translateY(8%) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slideInBottom {
+  0% {
+    opacity: 0;
+    transform: translateY(100%) scale(0.95);
+  }
+  70% {
+    transform: translateY(-8%) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Remove all hover effects - toasts should be non-interactive */
+[data-sonner-toast]:hover {
+  transform: none !important;
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 640px) {
+  [data-sonner-toast] {
+    max-width: calc(100vw - 24px) !important;
+    font-size: 9px !important;
+    padding: 10px 14px !important;
+    min-width: 200px !important;
+  }
+  
+  [data-sonner-toaster] {
+    max-width: calc(100vw - 16px) !important;
+  }
+}
+
+/* Pixelated Video Game Toast Styling - Clean White with Black Text */
+[data-sonner-toast] {
+  /* Clean white background with black stroke */
+  background-color: rgba(255, 255, 255, 0.98) !important;
+  border: 2px solid #000000 !important; 
+  border-radius: 8px !important;
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 0, 0, 0.8) !important;
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 10px !important;
+  line-height: 1.4 !important;
+  padding: 12px 18px !important;
+  color: #000000 !important;
+  text-shadow: none !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  image-rendering: pixelated;
+  -webkit-image-rendering: pixelated;
+  -moz-image-rendering: crisp-edges;
+  position: relative;
+  transform: translateZ(0);
+  min-width: 260px;
+  pointer-events: none !important; /* Completely non-interactive */
+  will-change: auto !important;
+  z-index: 65 !important; /* Even higher than toaster container to ensure visibility */
+  /* Ensure no transform changes on any state */
+  transition: opacity 0.3s ease !important;
+}
+
+/* All theme toasts use same clean white style */
+.toast-cityscape [data-sonner-toast],
+.toast-home [data-sonner-toast],
+.toast-sky [data-sonner-toast],
+.toast-puppy [data-sonner-toast] {
+  background-color: rgba(255, 255, 255, 0.98) !important;
+  border: 2px solid #000000 !important;
+  color: #000000 !important;
+  text-shadow: none !important;
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Toast types maintain clean black text */
+[data-sonner-toast][data-type="success"],
+[data-sonner-toast][data-type="info"],
+[data-sonner-toast][data-type="warning"],
+[data-sonner-toast][data-type="error"] {
+  color: #000000 !important;
+  text-shadow: none !important;
+}
+
+/* Hide default icons */
+[data-sonner-toast] [data-icon] {
+  display: none !important;
+}
+
+/* Pixelated loading indicator if needed */
+[data-sonner-toast] [data-loader] {
+  border: 2px solid #000;
+  border-top: 2px solid #3b82f6;
+  border-radius: 2px;
+  width: 12px;
+  height: 12px;
+  image-rendering: pixelated;
+}
+
+/* Text content with clear black text */
+[data-sonner-toast] [data-content] {
+  position: relative;
+  z-index: 2;
+  word-wrap: break-word;
+  max-width: 300px;
+  padding-right: 8px;
+  color: #000000 !important;
+  text-shadow: none !important;
+}
+
+/* Ensure all text elements in toast are black */
+[data-sonner-toast] * {
+  color: #000000 !important;
+  text-shadow: none !important;
+}
+
+/* Custom Scrollbar Styles - Subtle and Non-Disruptive */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(6, 182, 212, 0.1) transparent;
+  /* Ensure smooth scrolling on all devices */
+  scroll-behavior: smooth;
+  /* Better momentum scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
+  /* Prevent scroll chaining on desktop */
+  overscroll-behavior: contain;
+}
+
+/* Mobile Touch Optimization for Task History Dropdowns */
+@media (max-width: 768px) {
+  /* Improved button touch targets */
+  .task-history-dropdown-button {
+    min-height: 60px !important;
+    -webkit-tap-highlight-color: transparent !important;
+    touch-action: manipulation !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+  }
+  
+  /* Remove ALL hover and focus effects on mobile to prevent glitchy behavior */
+  .task-history-dropdown-button:hover,
+  .task-history-dropdown-button:focus {
+    background-color: inherit !important;
+    transform: none !important;
+  }
+  
+  /* Clean active state for mobile with minimal transform */
+  .task-history-dropdown-button:active {
+    opacity: 1 !important;
+    transition: opacity 0.1s ease !important;
+  }
+  
+  /* Smooth dropdown content expansion */
+  .task-history-dropdown-content {
+    will-change: height, opacity !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+    transform: translateZ(0) !important;
+  }
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(6, 182, 212, 0.15);
+  border-radius: 3px;
+  border: none;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(6, 182, 212, 0.25);
+}
+
+.custom-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Hide scrollbar completely when not scrolling - Safari/iOS */
+@supports (-webkit-touch-callout: none) {
+  .custom-scrollbar {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
+  }
+}
+
+/* Ultra-minimal scrollbar for mobile */
+@media (max-width: 768px) {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 2px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(6, 182, 212, 0.1);
+    border-radius: 1px;
+  }
+  
+  /* Optimized checkbox sizing for mobile */
+  .pixel-checkbox {
+    width: 16px !important;
+    height: 16px !important;
+    min-width: 16px !important;
+    min-height: 16px !important;
+  }
+}

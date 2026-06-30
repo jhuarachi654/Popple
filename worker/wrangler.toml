@@ -1,0 +1,7 @@
+name = "popple-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+kv_namespaces = [
+  { binding = "POPPLE_DATA", id = "8e21c7d7b9b2438ead75e51399404a53" }
+]
