@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Mail, Lock, ChevronRight, ChevronLeft } from 'lucide-react';
-import { getSupabaseClient } from '../utils/supabase/client';
+import { signIn, signUp } from '../utils/auth';
 
 interface LoginFlowProps {
   onAuthSuccess: (user: any, accessToken: string) => void;
@@ -19,8 +19,6 @@ const LoginFlow: React.FC<LoginFlowProps> = ({ onAuthSuccess, onGuestMode, backg
   const [isReturningUser, setIsReturningUser] = useState(true);
   const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
 
-  const supabase = getSupabaseClient();
-
   const switchMode = (returning: boolean) => {
     setIsReturningUser(returning);
     setError('');
@@ -30,19 +28,7 @@ const LoginFlow: React.FC<LoginFlowProps> = ({ onAuthSuccess, onGuestMode, backg
   };
 
   const handleForgotPassword = async () => {
-    setIsLoading(true);
-    setError('');
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: window.location.origin,
-      });
-      if (error) throw error;
-      setForgotPasswordSent(true);
-    } catch (err: any) {
-      setError(err.message || 'Could not send reset email. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
+    setError('Contact support to reset your password.');
   };
 
   const handleNext = async () => {
@@ -60,41 +46,22 @@ const LoginFlow: React.FC<LoginFlowProps> = ({ onAuthSuccess, onGuestMode, backg
       setIsLoading(true);
       try {
         const emailToUse = email.trim();
+        const result = isReturningUser
+          ? await signIn(emailToUse, password)
+          : await signUp(emailToUse, password);
 
-        if (isReturningUser) {
-          const { data, error } = await supabase.auth.signInWithPassword({ email: emailToUse, password });
-          if (error) {
-            setError(error.message.includes('Invalid login credentials')
-              ? 'Email or password is incorrect.'
-              : error.message);
-            return;
-          }
-          onAuthSuccess(data.user, data.session.access_token);
-        } else {
-          const { data, error } = await supabase.auth.signUp({
-            email: emailToUse,
-            password,
-            options: { data: { name: emailToUse.split('@')[0] } },
-          });
-          if (error) {
-            if (error.message.toLowerCase().includes('already registered') || error.message.toLowerCase().includes('already exists')) {
-              setError('Account already exists. Sign in instead.');
-              switchMode(true);
-            } else {
-              throw error;
-            }
-            return;
-          }
-          if (data.session) {
-            onAuthSuccess(data.user, data.session.access_token);
-          } else {
-            setCurrentStep(0);
+        if ('error' in result) {
+          if (!isReturningUser && result.error.toLowerCase().includes('already exists')) {
+            setError('Account already exists. Sign in instead.');
             switchMode(true);
-            setError('Check your email to confirm your account, then sign in.');
+          } else {
+            setError(result.error);
           }
+          return;
         }
-      } catch (error: any) {
-        setError(error.message || 'Something went wrong. Please try again.');
+        onAuthSuccess(result.user, result.token);
+      } catch (err: any) {
+        setError(err.message || 'Something went wrong. Please try again.');
       } finally {
         setIsLoading(false);
       }

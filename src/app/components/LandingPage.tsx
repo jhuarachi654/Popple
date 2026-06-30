@@ -525,12 +525,6 @@ export default function LandingPage({ onEnter, onGuestMode }: LandingPageProps) 
             >
               Get started
             </motion.button>
-            <button
-              onClick={onGuestMode}
-              className="font-space-mono text-sm text-white/60 hover:text-white transition-colors"
-            >
-              Try without an account
-            </button>
           </motion.div>
 
         </div>
@@ -580,14 +574,14 @@ export default function LandingPage({ onEnter, onGuestMode }: LandingPageProps) 
 
           {/* Chapter 1 — text from left, visual from right */}
           <div className="border-t border-cyan-100">
-            <div className="flex items-center justify-between py-14" style={{ minHeight: 252 }}>
+            <div className="flex flex-col md:flex-row items-center justify-center md:gap-32 gap-3 py-10 md:py-14 px-4 md:px-0" style={{ minHeight: 252 }}>
               <motion.div
                 initial={{ opacity: 0, x: -48 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, margin: '-60px' }}
                 transition={{ duration: 0.55, ease: 'easeOut' }}
-                className="flex-shrink-0 pl-16 flex flex-col gap-3"
-                style={{ maxWidth: '38%' }}
+                className="flex-shrink-0 flex flex-col gap-3"
+                style={{ width: 'min(260px, 100%)' }}
               >
                 <p className="font-space-mono text-xs text-cyan-600 uppercase tracking-widest">01</p>
                 <p className="font-pixel text-2xl text-gray-900 leading-snug">Add your<br />tasks.</p>
@@ -600,10 +594,9 @@ export default function LandingPage({ onEnter, onGuestMode }: LandingPageProps) 
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, margin: '-60px' }}
                 transition={{ duration: 0.55, ease: 'easeOut', delay: 0.1 }}
-                className="flex items-center justify-end px-16"
-                style={{ width: '55%' }}
+                className="flex-shrink-0"
               >
-                <div className="bg-gray-800 rounded-3xl border-2 border-gray-700 flex items-center justify-center flex-shrink-0" style={{ width: 432, height: 288 }}>
+                <div className="bg-gray-800 rounded-3xl border-2 border-gray-700 flex items-center justify-center" style={{ width: 'min(432px, calc(100vw - 32px))', height: 288 }}>
                   <div style={{ zoom: 1.5 }}><AddTasksVisual /></div>
                 </div>
               </motion.div>
@@ -612,16 +605,15 @@ export default function LandingPage({ onEnter, onGuestMode }: LandingPageProps) 
 
           {/* Chapter 2 — visual from left, text from right */}
           <div className="border-t border-cyan-100">
-            <div className="flex items-center justify-between py-14" style={{ minHeight: 252 }}>
+            <div className="flex flex-col md:flex-row items-center justify-center md:gap-32 gap-3 py-10 md:py-14 px-4 md:px-0" style={{ minHeight: 252 }}>
               <motion.div
                 initial={{ opacity: 0, x: -48 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, margin: '-60px' }}
                 transition={{ duration: 0.55, ease: 'easeOut' }}
-                className="flex items-center px-16"
-                style={{ width: '55%' }}
+                className="flex-shrink-0"
               >
-                <div className="bg-gray-800 rounded-3xl border-2 border-gray-700 flex items-center justify-center flex-shrink-0" style={{ width: 432, height: 288 }}>
+                <div className="bg-gray-800 rounded-3xl border-2 border-gray-700 flex items-center justify-center" style={{ width: 'min(432px, calc(100vw - 32px))', height: 288 }}>
                   <div style={{ zoom: 1.5 }}><CheckOffVisual /></div>
                 </div>
               </motion.div>
@@ -630,8 +622,8 @@ export default function LandingPage({ onEnter, onGuestMode }: LandingPageProps) 
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, margin: '-60px' }}
                 transition={{ duration: 0.55, ease: 'easeOut', delay: 0.1 }}
-                className="flex-shrink-0 pr-16 flex flex-col gap-3"
-                style={{ maxWidth: '38%' }}
+                className="flex-shrink-0 flex flex-col gap-3"
+                style={{ width: 'min(260px, 100%)' }}
               >
                 <p className="font-space-mono text-xs text-cyan-600 uppercase tracking-widest">02</p>
                 <p className="font-pixel text-2xl text-gray-900 leading-snug">Watch it<br />come alive.</p>
@@ -644,14 +636,14 @@ export default function LandingPage({ onEnter, onGuestMode }: LandingPageProps) 
 
           {/* Chapter 3 — text from left, visual drops in with scale */}
           <div className="border-t border-cyan-100 pb-14">
-            <div className="flex items-center justify-between py-14" style={{ minHeight: 252 }}>
+            <div className="flex flex-col md:flex-row items-center justify-center md:gap-32 gap-3 py-10 md:py-14 px-4 md:px-0" style={{ minHeight: 252 }}>
               <motion.div
                 initial={{ opacity: 0, x: -48 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, margin: '-60px' }}
                 transition={{ duration: 0.55, ease: 'easeOut' }}
-                className="flex-shrink-0 pl-16 flex flex-col gap-3"
-                style={{ maxWidth: '38%' }}
+                className="flex-shrink-0 flex flex-col gap-3"
+                style={{ width: 'min(260px, 100%)' }}
               >
                 <p className="font-space-mono text-xs text-cyan-600 uppercase tracking-widest">03</p>
                 <p className="font-pixel text-2xl text-gray-900 leading-snug">Pop it.</p>
@@ -664,10 +656,9 @@ export default function LandingPage({ onEnter, onGuestMode }: LandingPageProps) 
                 whileInView={{ opacity: 1, scale: 1, y: 0 }}
                 viewport={{ once: true, margin: '-60px' }}
                 transition={{ duration: 0.6, ease: [0.34, 1.56, 0.64, 1], delay: 0.1 }}
-                className="flex items-center justify-end px-16"
-                style={{ width: '55%' }}
+                className="flex-shrink-0"
               >
-                <div className="bg-gray-800 rounded-3xl border-2 border-gray-700 flex items-center justify-center flex-shrink-0" style={{ width: 432, height: 288 }}>
+                <div className="bg-gray-800 rounded-3xl border-2 border-gray-700 flex items-center justify-center" style={{ width: 'min(432px, calc(100vw - 32px))', height: 288 }}>
                   <div style={{ zoom: 1.5 }}><PopItVisual /></div>
                 </div>
               </motion.div>

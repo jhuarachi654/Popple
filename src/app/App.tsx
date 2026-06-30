@@ -10,7 +10,7 @@ import LoginFlow from './components/LoginFlow';
 
 import OnboardingFlow from './components/OnboardingFlow';
 import LandingPage from './components/LandingPage';
-import { getSupabaseClient } from './utils/supabase/client';
+import { getStoredToken, getStoredUser, clearSession, signOut as authSignOut } from './utils/auth';
 import { taskApi, progressApi, settingsApi } from './utils/api';
 
 import { Toaster } from './components/ui/sonner';
@@ -89,7 +89,7 @@ const backgroundThemes: BackgroundTheme[] = [
   }
 ];
 
-function PasswordRecoveryScreen({ supabase, backgroundImage, onComplete }: { supabase: any; backgroundImage: string; onComplete: () => void }) {
+function PasswordRecoveryScreen({ backgroundImage, onComplete }: { backgroundImage: string; onComplete: () => void }) {
   const [password, setPassword] = React.useState('');
   const [confirmPassword, setConfirmPassword] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
@@ -102,8 +102,9 @@ function PasswordRecoveryScreen({ supabase, backgroundImage, onComplete }: { sup
     if (password !== confirmPassword) { setError('Passwords do not match'); return; }
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password });
-      if (error) throw error;
+      const { updatePassword } = await import('./utils/auth');
+      const result = await updatePassword(password);
+      if (result.error) throw new Error(result.error);
       setSuccess(true);
       setTimeout(onComplete, 2000);
     } catch (err: any) {
@@ -195,8 +196,6 @@ export default function App() {
   });
   const [guestBannerDismissed, setGuestBannerDismissed] = useState(false);
   const [showLanding, setShowLanding] = useState(true);
-
-  const supabase = getSupabaseClient();
 
   // Level system configuration
   const levelConfig = [
@@ -582,8 +581,6 @@ export default function App() {
       
       // Load tasks — fall back to localStorage backup if API returns nothing
       const userTasks = await taskApi.getTasks(userAccessToken);
-      const userId = (await import('./utils/supabase/client')).getSupabaseClient().auth.getUser
-        ? undefined : undefined; // just for scoping below
 
       const parseTasks = (raw: any[]) => raw.map((todo: any) => ({
         ...todo,
@@ -599,9 +596,8 @@ export default function App() {
       } else {
         // API returned nothing — try localStorage backup before clearing tasks
         try {
-          const { getSupabaseClient } = await import('./utils/supabase/client');
-          const { data: { user: authUser } } = await getSupabaseClient().auth.getUser();
-          const cached = authUser ? localStorage.getItem(`popple-tasks-${authUser.id}`) : null;
+          const storedUser = getStoredUser();
+          const cached = storedUser ? localStorage.getItem(`popple-tasks-${storedUser.id}`) : null;
           if (cached) {
             const tasksWithDates = parseTasks(JSON.parse(cached));
             setTodos(tasksWithDates);
@@ -698,104 +694,21 @@ export default function App() {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        // First try to get the current session without refreshing
-        const { data: { session: currentSession }, error: currentSessionError } = await supabase.auth.getSession();
-        
-        if (currentSessionError) {
-          console.log('Current session fetch error:', currentSessionError.message);
-          setIsLoading(false);
-          return;
-        }
-        
-        if (currentSession?.user && currentSession.access_token) {
-          // We have a current session, try to refresh it to ensure it's valid
-          try {
-            const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
-            
-            if (refreshError) {
-              console.log('Session refresh failed:', refreshError.message);
-              
-              // If refresh fails with invalid refresh token, clear the session
-              if (refreshError.message.includes('Invalid Refresh Token') || 
-                  refreshError.message.includes('Refresh Token Not Found')) {
-                console.log('Invalid refresh token detected, signing out...');
-                await supabase.auth.signOut();
-                setIsLoading(false);
-                return;
-              }
-              
-              // For other refresh errors, try to use the current session
-              console.log('Using current session despite refresh error');
-              setUser(currentSession.user);
-              setAccessToken(currentSession.access_token);
-              await loadUserData(currentSession.access_token);
-            } else if (refreshedSession?.user && refreshedSession.access_token) {
-              console.log('Successfully refreshed session for user:', refreshedSession.user.email);
-              setUser(refreshedSession.user);
-              setAccessToken(refreshedSession.access_token);
-              await loadUserData(refreshedSession.access_token);
-            }
-          } catch (refreshError) {
-            console.log('Refresh attempt failed, using current session:', refreshError);
-            setUser(currentSession.user);
-            setAccessToken(currentSession.access_token);
-            await loadUserData(currentSession.access_token);
-          }
-        } else {
-          console.log('No current session found');
+        const token = getStoredToken();
+        const storedUser = getStoredUser();
+        if (token && storedUser) {
+          setUser(storedUser);
+          setAccessToken(token);
+          await loadUserData(token);
         }
       } catch (error) {
         console.error('Session check error:', error);
-        // Clear any potentially corrupted auth state
-        await supabase.auth.signOut();
+        clearSession();
       } finally {
         setIsLoading(false);
       }
     };
-
     checkSession();
-
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state change:', event, session?.user?.email || 'no user');
-      
-      if (event === 'PASSWORD_RECOVERY') {
-        setPasswordRecoveryMode(true);
-        return;
-      }
-
-      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user && session.access_token) {
-        console.log('User signed in/token refreshed, token starts with:', session.access_token.substring(0, 20) + '...');
-        setUser(session.user);
-        setAccessToken(session.access_token);
-        
-        // Only load data on initial sign in, not on token refresh
-        if (event === 'SIGNED_IN') {
-          await loadUserData(session.access_token);
-        }
-      } else if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' && !session) {
-        console.log('User signed out or session invalidated');
-        // Don't clear state if in guest mode
-        if (!isGuestMode) {
-          setUser(null);
-          setAccessToken(null);
-          setTodos([]);
-          setDailyStats([]);
-          setPlayerProgress({
-            level: 1,
-            currentXP: 0,
-            totalXP: 0,
-            unlockedRewards: []
-          });
-          // Don't reset background theme on logout - let it persist
-          setGameSettings({ animationType: 'sparkles' });
-        }
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, []);
 
   // Save background theme to localStorage whenever it changes
@@ -1040,8 +953,8 @@ export default function App() {
     setAccessToken(userAccessToken);
     setIsGuestMode(false);
 
-    const isNewUser = authUser.created_at &&
-      (Date.now() - new Date(authUser.created_at).getTime()) < 5 * 60 * 1000;
+    const isNewUser = authUser.createdAt &&
+      (Date.now() - new Date(authUser.createdAt).getTime()) < 5 * 60 * 1000;
     if (isNewUser) {
       try { localStorage.removeItem('popple-onboarding-complete'); } catch {}
       setShowOnboarding(true);
@@ -1083,15 +996,13 @@ export default function App() {
       return;
     }
 
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('Logout error:', error);
-      }
-      // The auth state change listener will handle clearing state
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+    authSignOut();
+    setUser(null);
+    setAccessToken(null);
+    setTodos([]);
+    setDailyStats([]);
+    setPlayerProgress({ level: 1, currentXP: 0, totalXP: 0, unlockedRewards: [] });
+    setGameSettings({ animationType: 'sparkles' });
   };
 
   // Show landing page for first-time visitors (session check runs in background)
@@ -1143,7 +1054,7 @@ export default function App() {
 
   // Show password reset form after clicking an email reset link
   if (passwordRecoveryMode) {
-    return <PasswordRecoveryScreen supabase={supabase} backgroundImage={currentTheme.image} onComplete={() => setPasswordRecoveryMode(false)} />;
+    return <PasswordRecoveryScreen backgroundImage={currentTheme.image} onComplete={() => setPasswordRecoveryMode(false)} />;
   }
 
   return (

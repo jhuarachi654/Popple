@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LogOut, Lock, BookOpen, ChevronRight, Check } from 'lucide-react';
-import { getSupabaseClient } from '../utils/supabase/client';
+import { updatePassword } from '../utils/auth';
 
 interface SettingsScreenProps {
   user: any;
@@ -18,8 +18,6 @@ export default function SettingsScreen({ user, isGuestMode, onLogout, onRestartO
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState(false);
 
-  const supabase = getSupabaseClient();
-
   const handleChangePassword = async () => {
     setPasswordError('');
     if (newPassword.length < 6) { setPasswordError('Password must be at least 6 characters.'); return; }
@@ -27,8 +25,8 @@ export default function SettingsScreen({ user, isGuestMode, onLogout, onRestartO
 
     setPasswordLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password: newPassword });
-      if (error) throw error;
+      const result = await updatePassword(newPassword);
+      if (result.error) throw new Error(result.error);
       setPasswordSuccess(true);
       setNewPassword('');
       setConfirmPassword('');
