@@ -1,0 +1,226 @@
+<title>Popple · Soot Sprite</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#f0f4f8; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; font-family:monospace; gap:52px; padding:40px; }
+  h2 { font-size:11px; text-transform:uppercase; letter-spacing:2px; color:#94a3b8; }
+  .row { display:flex; gap:56px; align-items:flex-end; justify-content:center; flex-wrap:wrap; }
+  .demo { display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .label { font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:1.5px; }
+  .ground { width:72px; height:2px; background:#cbd5e1; border-radius:2px; }
+
+  @keyframes idle { 0%,100%{transform:translateY(0) scaleY(1) scaleX(1);} 40%{transform:translateY(-7px) scaleY(1.05) scaleX(0.96);} 70%{transform:translateY(0) scaleY(0.93) scaleX(1.07);} 85%{transform:translateY(0) scaleY(1.01) scaleX(0.99);} }
+  @keyframes blink { 0%,88%,100%{transform:scaleY(1);} 93%{transform:scaleY(0.08);} }
+  @keyframes wll  {
+    0%,100%{ transform:translateY(0); }
+    18%    { transform:translateY(-8px); }
+    36%    { transform:translateY(0); }
+  }
+  @keyframes wlr  {
+    0%,56%,100%{ transform:translateY(0); }
+    74%        { transform:translateY(-8px); }
+    92%        { transform:translateY(0); }
+  }
+  @keyframes wbody {
+    0%,100%{ transform:translateY(0) rotate(0deg); }
+    18%    { transform:translateY(-3px) rotate(-2.5deg); }
+    36%    { transform:translateY(0) rotate(0deg); }
+    74%    { transform:translateY(-3px) rotate(2.5deg); }
+    92%    { transform:translateY(0) rotate(0deg); }
+  }
+  @keyframes jump {
+    0%  {transform:translateY(0) scaleY(0.78) scaleX(1.22);}
+    10% {transform:translateY(0) scaleY(1) scaleX(1);}
+    38% {transform:translateY(-55px) scaleY(1.1) scaleX(0.91);}
+    56% {transform:translateY(-57px) scaleY(1.12) scaleX(0.90);}
+    76% {transform:translateY(-3px) scaleY(1) scaleX(1);}
+    84% {transform:translateY(0) scaleY(0.74) scaleX(1.26);}
+    93% {transform:translateY(0) scaleY(1.02) scaleX(0.98);}
+    100%{transform:translateY(0) scaleY(0.78) scaleX(1.22);}
+  }
+  @keyframes jll { 0%,12%{transform:translateY(0);} 28%,66%{transform:translateY(-10px);} 88%,100%{transform:translateY(0);} }
+  @keyframes jlr { 0%,12%{transform:translateY(0);} 28%,66%{transform:translateY(10px);}  88%,100%{transform:translateY(0);} }
+  @keyframes jeye { 0%,28%{transform:scaleY(1);} 36%,64%{transform:scaleY(0.08);} 76%,100%{transform:scaleY(1);} }
+  @keyframes jshadow { 0%{transform:scaleX(1.3);opacity:0.18;} 50%{transform:scaleX(0.35);opacity:0.04;} 100%{transform:scaleX(1.3);opacity:0.18;} }
+  @keyframes cel { 0%,100%{transform:translateY(0) scaleX(1) scaleY(1);} 20%{transform:translateY(-16px) scaleX(0.94) scaleY(1.08);} 40%{transform:translateY(-18px) scaleX(1.06) scaleY(0.94);} 65%{transform:translateY(-8px) scaleX(0.98) scaleY(1.02);} 82%{transform:translateY(-2px) scaleX(1) scaleY(1);} }
+  @keyframes pt { 0%{opacity:0;transform:translate(0,0) scale(0);} 18%{opacity:1;} 100%{opacity:0;transform:translate(var(--px),var(--py)) scale(1);} }
+
+  .i .g    { animation:idle   2.6s ease-in-out infinite; transform-origin:40px 76px; }
+  .i .eye  { animation:blink  3.8s ease-in-out infinite; transform-origin:center; }
+  .w .g    { animation:wbody  1.0s ease-in-out infinite; transform-origin:40px 76px; }
+  .w .ll   { animation:wll    1.0s ease-in-out infinite; transform-origin:29px 70px; }
+  .w .lr   { animation:wlr    1.0s ease-in-out infinite; transform-origin:51px 70px; }
+  .w .eye  { animation:blink  3.8s ease-in-out infinite; transform-origin:center; }
+  .j .g    { animation:jump   1.9s cubic-bezier(0.4,0,0.2,1) infinite; transform-origin:40px 76px; }
+  .j .ll   { animation:jll    1.9s ease-in-out infinite; transform-origin:29px 60px; }
+  .j .lr   { animation:jlr    1.9s ease-in-out infinite; transform-origin:51px 60px; }
+  .j .eye  { animation:jeye   1.9s ease-in-out infinite; transform-origin:center; }
+  .j .sh   { animation:jshadow 1.9s ease-in-out infinite; }
+  .c .g    { animation:cel    1.1s ease-in-out infinite; transform-origin:40px 76px; }
+  .c .eye  { animation:blink  1.6s ease-in-out infinite; transform-origin:center; }
+  .pt { animation:pt 1.0s ease-out infinite; }
+  .p1{--px:-22px;--py:-36px;animation-delay:.00s;} .p2{--px:24px;--py:-30px;animation-delay:.13s;}
+  .p3{--px:-10px;--py:-46px;animation-delay:.24s;} .p4{--px:18px;--py:-22px;animation-delay:.38s;}
+  .p5{--px:-28px;--py:-18px;animation-delay:.50s;} .p6{--px:30px;--py:-40px;animation-delay:.64s;}
+</style>
+
+<h2>Popple · Soot Sprite</h2>
+
+<!--
+  Shoe shape: narrow ankle rect (drawn first, inside body) + wider toe rect flaring outward.
+  Left toe overhangs left, right toe overhangs right → cute little dress shoe silhouette.
+  Body drawn after legs → covers ankle tops seamlessly.
+-->
+
+<svg style="display:none">
+  <defs>
+    <!-- Semicircle feet: flat bottom on ground, rounded top, gap below body -->
+    <g id="lshoe"><path d="M 21,78 A 8,8 0 0,1 37,78 Z" fill="#2d3748"/></g>
+    <g id="rshoe"><path d="M 43,78 A 8,8 0 0,1 59,78 Z" fill="#2d3748"/></g>
+    <!-- Body bumps -->
+    <g id="body">
+      <circle cx="40" cy="40" r="21" fill="#2d3748"/>
+      <circle cx="40" cy="20" r="9"  fill="#2d3748"/>
+      <circle cx="51" cy="22" r="8"  fill="#2d3748"/>
+      <circle cx="59" cy="31" r="8"  fill="#2d3748"/>
+      <circle cx="61" cy="42" r="8"  fill="#2d3748"/>
+      <circle cx="56" cy="53" r="7"  fill="#2d3748"/>
+      <circle cx="29" cy="22" r="8"  fill="#2d3748"/>
+      <circle cx="21" cy="31" r="8"  fill="#2d3748"/>
+      <circle cx="19" cy="42" r="8"  fill="#2d3748"/>
+      <circle cx="24" cy="53" r="7"  fill="#2d3748"/>
+    </g>
+  </defs>
+</svg>
+
+<div class="row">
+
+  <!-- IDLE -->
+  <div class="demo i">
+    <svg width="80" height="96" viewBox="0 0 80 96" overflow="visible">
+      <ellipse cx="40" cy="94" rx="24" ry="3.5" fill="#2d3748" opacity="0.12"/>
+      <g class="g">
+        <use href="#lshoe"/><use href="#rshoe"/>
+        <use href="#body"/>
+        <g class="eye" style="transform-origin:32px 37px"><circle cx="32" cy="37" r="3.5" fill="white"/></g>
+        <g class="eye" style="transform-origin:48px 37px"><circle cx="48" cy="37" r="3.5" fill="white"/></g>
+      </g>
+    </svg>
+    <div class="ground"></div>
+    <div class="label">Idle</div>
+  </div>
+
+  <!-- WALK -->
+  <div class="demo w">
+    <svg width="80" height="96" viewBox="0 0 80 96" overflow="visible">
+      <ellipse cx="40" cy="94" rx="24" ry="3.5" fill="#2d3748" opacity="0.12"/>
+      <g class="g">
+        <g class="ll"><use href="#lshoe"/></g>
+        <g class="lr"><use href="#rshoe"/></g>
+        <use href="#body"/>
+        <g class="eye" style="transform-origin:32px 37px"><circle cx="32" cy="37" r="3.5" fill="white"/></g>
+        <g class="eye" style="transform-origin:48px 37px"><circle cx="48" cy="37" r="3.5" fill="white"/></g>
+      </g>
+    </svg>
+    <div class="ground"></div>
+    <div class="label">Walk</div>
+  </div>
+
+  <!-- JUMP -->
+  <div class="demo j">
+    <svg width="80" height="156" viewBox="0 0 80 156" overflow="visible">
+      <ellipse class="sh" cx="40" cy="154" rx="24" ry="3.5" fill="#2d3748" opacity="0.15"/>
+      <g class="g" style="transform:translateY(50px)">
+        <g class="ll"><use href="#lshoe"/></g>
+        <g class="lr"><use href="#rshoe"/></g>
+        <use href="#body"/>
+        <g class="eye" style="transform-origin:32px 37px"><circle cx="32" cy="37" r="3.5" fill="white"/></g>
+        <g class="eye" style="transform-origin:48px 37px"><circle cx="48" cy="37" r="3.5" fill="white"/></g>
+      </g>
+    </svg>
+    <div class="ground"></div>
+    <div class="label">Jump</div>
+  </div>
+
+  <!-- CELEBRATE -->
+  <div class="demo c">
+    <svg width="80" height="96" viewBox="0 0 80 96" overflow="visible">
+      <ellipse cx="40" cy="94" rx="24" ry="3.5" fill="#2d3748" opacity="0.12"/>
+      <circle class="pt p1" cx="40" cy="40" r="4" fill="#0ea5e9"/>
+      <circle class="pt p2" cx="40" cy="40" r="3" fill="#a78bfa"/>
+      <circle class="pt p3" cx="40" cy="40" r="3.5" fill="#34d399"/>
+      <circle class="pt p4" cx="40" cy="40" r="4" fill="#fb923c"/>
+      <circle class="pt p5" cx="40" cy="40" r="3" fill="#f472b6"/>
+      <circle class="pt p6" cx="40" cy="40" r="3.5" fill="#facc15"/>
+      <g class="g">
+        <use href="#lshoe"/><use href="#rshoe"/>
+        <use href="#body"/>
+        <g class="eye" style="transform-origin:32px 37px"><circle cx="32" cy="37" r="3.5" fill="white"/></g>
+        <g class="eye" style="transform-origin:48px 37px"><circle cx="48" cy="37" r="3.5" fill="white"/></g>
+      </g>
+    </svg>
+    <div class="ground"></div>
+    <div class="label">Celebrate</div>
+  </div>
+
+</div>
+
+<!-- EXPRESSIONS -->
+<div>
+  <h2 style="margin-bottom:24px;">Expressions</h2>
+  <div class="row" style="align-items:center;">
+
+    <div class="demo">
+      <svg width="80" height="72" viewBox="0 0 80 72">
+        <use href="#lshoe"/><use href="#rshoe"/><use href="#body"/>
+        <circle cx="32" cy="37" r="3.5" fill="white"/><circle cx="48" cy="37" r="3.5" fill="white"/>
+      </svg>
+      <div class="label">Default</div>
+    </div>
+
+    <!-- Angry: wedge eyes — outer corner high, diagonal slash to inner corner, curved bottom -->
+    <div class="demo">
+      <svg width="80" height="72" viewBox="0 0 80 72">
+        <use href="#lshoe"/><use href="#rshoe"/><use href="#body"/>
+        <!-- left eye: outer-top high (25,33), inner-top low (38,38), rounded bottom -->
+        <path d="M 25,33 L 38,38 Q 38,45 31,45 Q 24,45 25,38 Z" fill="white"/>
+        <!-- right eye: mirror -->
+        <path d="M 55,33 L 42,38 Q 42,45 49,45 Q 56,45 55,38 Z" fill="white"/>
+      </svg>
+      <div class="label">Angry</div>
+    </div>
+
+    <div class="demo">
+      <svg width="80" height="72" viewBox="0 0 80 72">
+        <use href="#lshoe"/><use href="#rshoe"/><use href="#body"/>
+        <circle cx="32" cy="37" r="5" fill="white"/><circle cx="48" cy="37" r="5" fill="white"/>
+        <circle cx="28" cy="10" r="2.5" fill="white"/><circle cx="40" cy="5" r="2" fill="white"/><circle cx="52" cy="10" r="2.5" fill="white"/>
+      </svg>
+      <div class="label">Hyped</div>
+    </div>
+
+    <!-- Surprised: wide eyes + small ! floating to the right -->
+    <div class="demo">
+      <svg width="96" height="72" viewBox="0 0 96 72">
+        <use href="#lshoe"/><use href="#rshoe"/><use href="#body"/>
+        <circle cx="32" cy="37" r="6" fill="white"/><circle cx="48" cy="37" r="6" fill="white"/>
+        <!-- exclamation mark -->
+        <rect x="76" y="24" width="4" height="14" rx="2" fill="#2d3748"/>
+        <circle cx="78" cy="44" r="2.5" fill="#2d3748"/>
+      </svg>
+      <div class="label">Surprised</div>
+    </div>
+
+    <div class="demo">
+      <svg width="80" height="72" viewBox="0 0 80 72">
+        <use href="#lshoe"/><use href="#rshoe"/><use href="#body"/>
+        <rect x="27" y="35" width="11" height="4" rx="2" fill="white"/><rect x="42" y="35" width="11" height="4" rx="2" fill="white"/>
+      </svg>
+      <div class="label">Tired</div>
+    </div>
+
+  </div>
+</div>
+
+<p style="font-size:10px;color:#94a3b8;text-align:center;max-width:440px;line-height:1.8;">
+  dress shoe legs · 9 bumps top+sides · tiny dot eyes · pure SVG + CSS
+</p>
