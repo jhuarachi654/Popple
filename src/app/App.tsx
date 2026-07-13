@@ -1101,7 +1101,7 @@ export default function App() {
       
       {/* Fixed Top Navigation */}
       {/* Guest mode banner — shown above nav until dismissed */}
-      {isGuestMode && !guestBannerDismissed && (
+      {isGuestMode && !guestBannerDismissed && activeScreen !== 'game' && (
         <div
           className="fixed left-0 right-0 z-40 bg-gray-900/95 backdrop-blur-sm border-t border-gray-700/50 px-4 py-2 flex items-center gap-3"
           style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom))' }}

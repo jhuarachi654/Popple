@@ -1,15 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { HelpCircle } from 'lucide-react';
-import TaskContainer from './TaskPill';
-import ParticleEffect from './ParticleEffect';
-import ArcadeExplosionEffect from './ArcadeExplosionEffect';
-
+import { HelpCircle, Bell, Shirt } from 'lucide-react';
+import PoppleCharacter, { type PoppleAccessory } from './PoppleCharacter';
+import PopupWorld from './PopupWorld';
+import AccessoryDrawer from './AccessoryDrawer';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
-import { toast } from 'sonner';
 import type { Todo, GameSettings } from '../App';
 
+interface BackgroundTheme {
+  id: string;
+  name: string;
+  icon: any;
+  image: string;
+  description: string;
+}
 
 interface GameScreenProps {
   completedTodos: Todo[];
@@ -36,48 +41,22 @@ interface GameScreenProps {
   onBackgroundThemeChange: (theme: string) => void;
 }
 
-interface BackgroundTheme {
+interface Creature {
   id: string;
-  name: string;
-  icon: any;
-  image: string;
-  description: string;
-}
-
-interface PillState extends Todo {
   x: number;
   y: number;
   vx: number;
   vy: number;
-  width: number;
-  height: number;
-  isSelected: boolean;
-  isDragging: boolean;
-  transformationPhase: 'task' | 'transitioning' | 'pill';
+  expression: 'idle' | 'celebrating' | 'sleeping' | 'angry' | 'ticking';
+  isDragging?: boolean;
+  externalReaction?: { text: string; nonce: number };
 }
 
-interface Celebration {
-  id: string;
-  x: number;
-  y: number;
-  type: 'explosion' | 'sparkles' | 'plant' | 'confetti' | 'rainbow' | 'stars';
-}
-
-
-
-interface ArcadeExplosion {
-  id: string;
-  pillId: string; // Track which pill this explosion belongs to
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  duration?: number; // Optional duration for slow motion effects
-}
-
-
-
-const PILL_SPEED = 1.2;
+const CREATURE_SPEED = 0.567; // ~34px/s at 60fps
+const CREATURE_W     = 80;   // px footprint
+const CREATURE_H     = 88;   // full bounding box height
+const CREATURE_FOOT  = 73;   // px from top to visual foot contact (y2=68 + 5px stroke radius)
+const GRAVITY        = 1.4;  // px per frame (felt gravity — snappy return to ground)
 
 export default function GameScreen({
   completedTodos,
@@ -92,797 +71,508 @@ export default function GameScreen({
   backgroundTheme,
   onBackgroundThemeChange,
 }: GameScreenProps) {
-  const [pills, setPills] = useState<PillState[]>([]);
-  const [celebrations, setCelebrations] = useState<Celebration[]>([]);
-  const [arcadeExplosions, setArcadeExplosions] = useState<ArcadeExplosion[]>([]);
-  const [showOnboarding, setShowOnboarding] = useState(true);
-  const [examplePills, setExamplePills] = useState<PillState[]>([]);
-  const [showHelp, setShowHelp] = useState(false);
-  const helpButtonRef = useRef<HTMLButtonElement>(null);
+  // Start with 1 starter Popple — new ones are milestone-unlocked, not per-task
+  const [creatures,  setCreatures]  = useState<Creature[]>([{
+    id: 'starter',
+    x: 40, y: 0,
+    vx: CREATURE_SPEED, vy: 0,
+    expression: 'idle',
+  }]);
+  const [showPopup,       setShowPopup]       = useState(false);
+  const [showHelp,        setShowHelp]        = useState(false);
+  const [showWardrobe,    setShowWardrobe]    = useState(false);
+  const [showThemePicker, setShowThemePicker] = useState(false);
+  const [showAccPicker,   setShowAccPicker]   = useState(false);
 
-  // Toast queue system for smooth consecutive notifications
-  const toastQueueRef = useRef<string[]>([]);
-  const isProcessingToastRef = useRef(false);
-  const lastToastTimeRef = useRef(0);
+  // Accessory — persisted to localStorage
+  const [equippedAcc, setEquippedAcc] = useState<PoppleAccessory>(() => {
+    try { return (localStorage.getItem('popple-accessory') as PoppleAccessory) ?? null; }
+    catch { return null; }
+  });
 
-  const containerRef = useRef<HTMLDivElement>(null);
-  const animationRef = useRef<number>();
-  const lastTsRef = useRef<number>(0);
+  const handleEquip = (acc: PoppleAccessory) => {
+    setEquippedAcc(acc);
+    try { localStorage.setItem('popple-accessory', acc ?? ''); } catch {}
+  };
 
-  // Initialize example pills for onboarding
-  useEffect(() => {
-    if (!containerRef.current) return;
-    
-    const container = containerRef.current;
-    const containerWidth = container.clientWidth;
-    const containerHeight = container.clientHeight - 100;
-    
-    // Create 3 example pills for onboarding demonstration
-    const examples = [
-      { text: "Buy fresh groceries", id: "example-1" },
-      { text: "Call the dentist", id: "example-2" }, 
-      { text: "Pay monthly bills", id: "example-3" }
-    ];
-    
-    const examplePillStates: PillState[] = examples.map((example, index) => {
-      const getDynamicDimensions = (text: string) => {
-        const words = text.trim().split(/\s+/);
-        const wordCount = words.length;
-        
-        if (wordCount >= 3 && wordCount <= 5) {
-          const avgCharWidth = 8;
-          const padding = 16;
-          const minWidth = 80;
-          const maxWidth = 140;
-          
-          const estimatedWidth = Math.max(minWidth, Math.min(maxWidth, text.length * avgCharWidth + padding));
-          
-          let height;
-          if (wordCount <= 3) {
-            height = 48;
-          } else if (wordCount === 4) {
-            height = 56;
-          } else {
-            height = 64;
-          }
-          
-          return { width: estimatedWidth, height };
-        }
-        
-        return { width: 120, height: 48 };
-      };
-      
-      const { width, height } = getDynamicDimensions(example.text);
-      
-      // Position examples in a scattered pattern
-      const positions = [
-        { x: containerWidth * 0.15, y: containerHeight * 0.3 },
-        { x: containerWidth * 0.6, y: containerHeight * 0.15 },
-        { x: containerWidth * 0.3, y: containerHeight * 0.6 }
-      ];
-      
-      const pos = positions[index] || { x: containerWidth * 0.5, y: containerHeight * 0.5 };
-      
-      return {
-        id: example.id,
-        text: example.text,
-        completed: true,
-        createdAt: new Date(),
-        completedAt: new Date(),
-        x: Math.max(0, Math.min(containerWidth - width, pos.x)),
-        y: Math.max(0, Math.min(containerHeight - height, pos.y)),
-        vx: (Math.random() - 0.5) * 1, // Very slow drift
-        vy: (Math.random() - 0.5) * 1,
-        width,
-        height,
-        isSelected: false,
-        isDragging: false,
-        transformationPhase: 'pill' as const,
-      };
-    });
-    
-    setExamplePills(examplePillStates);
-  }, [containerRef.current]);
+  // Derive total tasks done from totalXP (each task = 100 XP)
+  const totalTasksDone = Math.floor(playerProgress.totalXP / 100);
 
-  // Hide onboarding when user has completed tasks
-  useEffect(() => {
-    if (completedTodos.length > 0) {
-      setShowOnboarding(false);
-    }
-  }, [completedTodos.length]);
+  const containerRef      = useRef<HTMLDivElement>(null);
+  const animRef           = useRef<number>();
+  const lastTsRef         = useRef<number>(0);
+  const helpBtnRef        = useRef<HTMLButtonElement>(null);
+  const dragRef           = useRef<{ id: string; downTime: number; moved: boolean } | null>(null);
+  const pointerHistoryRef = useRef<{ x: number; y: number; t: number }[]>([]);
+  const tapCountRef       = useRef<{ id: string; count: number; lastTime: number }>({ id: '', count: 0, lastTime: 0 });
+  const reactionNonce     = useRef(0);
+  const idleTimerRef      = useRef<ReturnType<typeof setTimeout>>();
+  const sleepTimerRef     = useRef<ReturnType<typeof setTimeout>>();
 
-  // Handle new completed tasks - directly create floating containers
-  useEffect(() => {
-    if (!containerRef.current) return;
-    
-    const container = containerRef.current;
-    const containerWidth = container.clientWidth;
-    const containerHeight = container.clientHeight - 100;
-    
-    // Find new completed tasks that aren't in pills yet
-    const existingPillIds = new Set(pills.map(p => p.id));
-    const newTodos = completedTodos.filter(todo => !existingPillIds.has(todo.id));
-    
-    if (newTodos.length > 0) {
-      // Create pills directly without transformation animation
-      const newPills: PillState[] = newTodos.map((todo, index) => {
-        // Calculate dynamic dimensions based on content
-        const getDynamicDimensions = (text: string) => {
-          const words = text.trim().split(/\s+/);
-          const wordCount = words.length;
-          
-          // Only apply dynamic sizing for 3-5 word tasks
-          if (wordCount >= 3 && wordCount <= 5) {
-            const avgCharWidth = 8;
-            const padding = 16;
-            const minWidth = 80;
-            const maxWidth = 140;
-            
-            const estimatedWidth = Math.max(minWidth, Math.min(maxWidth, text.length * avgCharWidth + padding));
-            
-            let height;
-            if (wordCount <= 3) {
-              height = 48;
-            } else if (wordCount === 4) {
-              height = 56;
-            } else {
-              height = 64;
-            }
-            
-            return { width: estimatedWidth, height };
-          }
-          
-          return { width: 120, height: 48 };
-        };
-        
-        const { width, height } = getDynamicDimensions(todo.text);
-        
-        // Better initial positioning to avoid overlaps
-        let x, y;
-        let attempts = 0;
-        const maxAttempts = 20;
-        
-        do {
-          x = Math.random() * (containerWidth - width);
-          y = Math.random() * (containerHeight - height);
-          attempts++;
-        } while (attempts < maxAttempts && pills.some(existingPill => {
-          const dx = (x + width/2) - (existingPill.x + existingPill.width/2);
-          const dy = (y + height/2) - (existingPill.y + existingPill.height/2);
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          const minDistance = Math.max(width, height, existingPill.width, existingPill.height) / 2 + 30;
-          return distance < minDistance;
-        }));
-        
-        const angle = Math.random() * Math.PI * 2;
-        return {
-          ...todo,
-          x,
-          y,
-          vx: Math.cos(angle) * PILL_SPEED,
-          vy: Math.sin(angle) * PILL_SPEED,
-          width,
-          height,
-          isSelected: false,
-          isDragging: false,
-          transformationPhase: 'pill',
-        };
-      });
-      
-      setPills(prevPills => [...prevPills, ...newPills]);
-    }
-  }, [completedTodos, containerRef.current]);
-
-  // Physics animation loop — DVD-style constant-velocity bouncing
+  // ── Creature physics (horizontal walk only) ────────────────────────────────
   useEffect(() => {
     const animate = (ts: number) => {
       const dt = lastTsRef.current ? Math.min((ts - lastTsRef.current) / 16.67, 3) : 1;
       lastTsRef.current = ts;
 
-      const container = containerRef.current;
-      if (!container) {
-        animationRef.current = requestAnimationFrame(animate);
-        return;
-      }
+      const cw = containerRef.current?.clientWidth  ?? 400;
+      const ch = containerRef.current?.clientHeight ?? 600;
 
-      const containerWidth = container.clientWidth;
-      const containerHeight = container.clientHeight - 100;
+      setCreatures(prev => prev.map(c => {
+        if (c.isDragging) return c;
+        let { x, y, vx, vy } = c;
 
-      setPills(prevPills => {
-        if (prevPills.length === 0) return prevPills;
+        // Horizontal walk
+        x += vx * dt;
+        if (x <= 0)            { x = 0;            vx =  Math.abs(vx); }
+        else if (x >= cw - CREATURE_W) { x = cw - CREATURE_W; vx = -Math.abs(vx); }
 
-        // Step 1: normalize every pill to PILL_SPEED so speed never drifts
-        const normalized = prevPills.map(pill => {
-          if (pill.isDragging || pill.isSelected) return pill;
-          const speed = Math.sqrt(pill.vx * pill.vx + pill.vy * pill.vy);
-          if (speed < 0.01) {
-            const angle = Math.random() * Math.PI * 2;
-            return { ...pill, vx: Math.cos(angle) * PILL_SPEED, vy: Math.sin(angle) * PILL_SPEED };
-          }
-          return { ...pill, vx: (pill.vx / speed) * PILL_SPEED, vy: (pill.vy / speed) * PILL_SPEED };
-        });
-
-        // Step 2: move and perfect-reflect off walls (no energy loss)
-        const moved = normalized.map(pill => {
-          if (pill.isDragging || pill.isSelected) return pill;
-
-          let newVx = pill.vx;
-          let newVy = pill.vy;
-          let newX = pill.x + newVx * dt;
-          let newY = pill.y + newVy * dt;
-
-          if (newX <= 0) { newX = 0; newVx = Math.abs(newVx); }
-          else if (newX + pill.width >= containerWidth) { newX = containerWidth - pill.width; newVx = -Math.abs(newVx); }
-
-          if (newY <= 0) { newY = 0; newVy = Math.abs(newVy); }
-          else if (newY + pill.height >= containerHeight) { newY = containerHeight - pill.height; newVy = -Math.abs(newVy); }
-
-          return { ...pill, x: newX, y: newY, vx: newVx, vy: newVy };
-        });
-
-        // Step 3: elastic pill-to-pill collisions (equal-mass velocity exchange along normal)
-        const result = [...moved];
-        for (let i = 0; i < result.length; i++) {
-          if (result[i].isDragging || result[i].isSelected) continue;
-          for (let j = i + 1; j < result.length; j++) {
-            if (result[j].isDragging || result[j].isSelected) continue;
-
-            const a = result[i];
-            const b = result[j];
-            const dx = (a.x + a.width / 2) - (b.x + b.width / 2);
-            const dy = (a.y + a.height / 2) - (b.y + b.height / 2);
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            const minDist = (Math.max(a.width, a.height) + Math.max(b.width, b.height)) / 2 + 4;
-
-            if (dist < minDist && dist > 0) {
-              const nx = dx / dist;
-              const ny = dy / dist;
-              // Relative velocity along collision normal
-              const dvn = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
-              // Only resolve if pills are approaching each other
-              if (dvn < 0) {
-                result[i] = { ...a, vx: a.vx - dvn * nx, vy: a.vy - dvn * ny };
-                result[j] = { ...b, vx: b.vx + dvn * nx, vy: b.vy + dvn * ny };
-              }
-              // Separate overlapping pills
-              const overlap = (minDist - dist) / 2;
-              result[i] = { ...result[i], x: result[i].x + nx * overlap, y: result[i].y + ny * overlap };
-              result[j] = { ...result[j], x: result[j].x - nx * overlap, y: result[j].y - ny * overlap };
-            }
+        // Gravity — always pulls to ground, no floating
+        if (y > 0 || vy < 0) {
+          vy -= GRAVITY * dt;
+          y  += vy * dt;
+          if (y <= 0) {
+            y  = 0;
+            const bounce = Math.abs(vy) * 0.28;
+            vy = bounce > 1.2 ? bounce : 0; // small recoil, dies out quickly
+            vx = vx > 0 ? CREATURE_SPEED : -CREATURE_SPEED;
           }
         }
 
-        // Step 4: re-normalize after collisions to keep speed perfectly constant
-        return result.map(pill => {
-          if (pill.isDragging || pill.isSelected) return pill;
-          const speed = Math.sqrt(pill.vx * pill.vx + pill.vy * pill.vy);
-          if (speed < 0.01) return pill;
-          return { ...pill, vx: (pill.vx / speed) * PILL_SPEED, vy: (pill.vy / speed) * PILL_SPEED };
-        });
-      });
+        return { ...c, x, y, vx, vy };
+      }));
 
-      animationRef.current = requestAnimationFrame(animate);
+      animRef.current = requestAnimationFrame(animate);
     };
 
-    animationRef.current = requestAnimationFrame(animate);
-
-    return () => {
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
-    };
+    animRef.current = requestAnimationFrame(animate);
+    return () => { if (animRef.current) cancelAnimationFrame(animRef.current); };
   }, []);
 
-  // Smart toast queue system for smooth consecutive notifications
-  const queueToast = (message: string) => {
-    toastQueueRef.current.push(message);
-    processToastQueue();
+  // ── Context reaction helper ────────────────────────────────────────────────
+  const triggerReaction = (id: string, text: string) => {
+    reactionNonce.current += 1;
+    const nonce = reactionNonce.current;
+    setCreatures(prev => prev.map(c => c.id === id ? { ...c, externalReaction: { text, nonce } } : c));
   };
 
-  const processToastQueue = () => {
-    if (isProcessingToastRef.current || toastQueueRef.current.length === 0) {
-      return;
-    }
-
-    isProcessingToastRef.current = true;
-    const currentTime = Date.now();
-    const timeSinceLastToast = currentTime - lastToastTimeRef.current;
-    
-    // Stagger toasts intelligently based on timing
-    let delay = 0;
-    if (timeSinceLastToast < 2000) { // If last toast was less than 2 seconds ago
-      delay = Math.max(0, 800 - timeSinceLastToast); // Stagger by 800ms minimum
-    }
-    
-    setTimeout(() => {
-      const message = toastQueueRef.current.shift();
-      if (message) {
-        toast.success(message, {
-          duration: 2800, // Slightly shorter duration for better flow
-        });
-        lastToastTimeRef.current = Date.now();
-      }
-      
-      isProcessingToastRef.current = false;
-      
-      // Process next toast in queue if any
-      if (toastQueueRef.current.length > 0) {
-        setTimeout(() => processToastQueue(), 200); // Small gap between consecutive toasts
-      }
-    }, delay);
+  // Wake a sleeping Popple
+  const wakeUp = (id: string) => {
+    setCreatures(prev => prev.map(c =>
+      c.id === id && c.expression === 'sleeping' ? { ...c, expression: 'idle' } : c
+    ));
   };
 
-  const handleTaskSelect = (id: string) => {
-    setPills(prevPills =>
-      prevPills.map(pill => ({
-        ...pill,
-        isSelected: pill.id === id,
-        isDragging: false,
-      }))
-    );
+  // Reset idle + sleep timers on any interaction
+  const resetIdleTimer = (id: string) => {
+    wakeUp(id);
+    clearTimeout(idleTimerRef.current);
+    clearTimeout(sleepTimerRef.current);
+
+    // Bored blurb after 20–35s
+    idleTimerRef.current = setTimeout(() => {
+      const phrases = ["hello??", "anyone there?", "bored.", "am I being watched", "*stares at wall*", "..."];
+      triggerReaction(id, phrases[Math.floor(Math.random() * phrases.length)]);
+      resetIdleTimer(id);
+    }, 20000 + Math.random() * 15000);
+
+    // Fall asleep after 45s
+    sleepTimerRef.current = setTimeout(() => {
+      setCreatures(prev => prev.map(c => c.id === id ? { ...c, expression: 'sleeping' as const, vx: 0 } : c));
+    }, 45000);
   };
 
-  const handleTaskDrag = (id: string, newX: number, newY: number) => {
+  // ── Drag / hold / throw handlers ──────────────────────────────────────────
+  const handleCreaturePointerDown = (e: React.PointerEvent, id: string) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragRef.current = { id, downTime: Date.now(), moved: false };
+    pointerHistoryRef.current = [{ x: e.clientX, y: e.clientY, t: Date.now() }];
+    resetIdleTimer(id);
+
+    // Immediately held — creature lifts to cursor
     if (!containerRef.current) return;
-    
-    const containerWidth = containerRef.current.clientWidth;
-    const containerHeight = containerRef.current.clientHeight - 100;
-    
-    // Use callback to ensure immediate update without state batching delays
-    setPills(prevPills => {
-      const draggedPillIndex = prevPills.findIndex(p => p.id === id);
-      if (draggedPillIndex === -1) return prevPills;
-      
-      const draggedPill = prevPills[draggedPillIndex];
-      const clampedX = Math.max(0, Math.min(containerWidth - draggedPill.width, newX));
-      const clampedY = Math.max(0, Math.min(containerHeight - draggedPill.height, newY));
-      
-      // Create updated pills array with real-time collision detection
-      return prevPills.map((pill, index) => {
-        if (pill.id === id) {
-          // Update the dragged pill position
-          return {
-            ...pill,
-            x: clampedX,
-            y: clampedY,
-            isDragging: true,
-            vx: 0, // Stop any existing momentum during drag
-            vy: 0,
-          };
-        } else if (!pill.isSelected && !pill.isDragging) {
-          // Push pills out of the way during drag — positional separation only,
-          // velocity direction is preserved and re-normalized by the physics loop
-          const dx = (clampedX + draggedPill.width / 2) - (pill.x + pill.width / 2);
-          const dy = (clampedY + draggedPill.height / 2) - (pill.y + pill.height / 2);
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          const minDist = (Math.max(draggedPill.width, draggedPill.height) + Math.max(pill.width, pill.height)) / 2 + 4;
+    const rect = containerRef.current.getBoundingClientRect();
+    const navBottom = rect.bottom; // container bottom = nav bar top
+    const newX = Math.max(0, Math.min(rect.width - CREATURE_W, e.clientX - rect.left - CREATURE_W / 2));
+    const newY = Math.max(0, navBottom - e.clientY - CREATURE_H / 2);
+    setCreatures(prev => prev.map(c => c.id === id ? { ...c, isDragging: true, vx: 0, vy: 0, x: newX, y: newY } : c));
 
-          if (dist < minDist && dist > 0) {
-            const nx = dx / dist;
-            const ny = dy / dist;
-            const overlap = minDist - dist;
-            return {
-              ...pill,
-              x: Math.max(0, Math.min(containerWidth - pill.width, pill.x - nx * overlap)),
-              y: Math.max(0, Math.min(containerHeight - pill.height, pill.y - ny * overlap)),
-              vx: -nx * PILL_SPEED,
-              vy: -ny * PILL_SPEED,
-            };
-          }
-        }
-        
-        return pill;
-      });
-    });
-  };
-
-  const handleTaskRelease = (id: string, releaseVelocity?: { vx: number, vy: number }) => {
-    setPills(prevPills =>
-      prevPills.map(pill =>
-        pill.id === id
-          ? {
-              ...pill,
-              isSelected: false,
-              isDragging: false,
-              // Direction from throw gesture; magnitude is normalized to PILL_SPEED on next frame
-              vx: releaseVelocity?.vx ?? Math.cos(Math.random() * Math.PI * 2) * PILL_SPEED,
-              vy: releaseVelocity?.vy ?? Math.sin(Math.random() * Math.PI * 2) * PILL_SPEED,
-            }
-          : pill
-      )
-    );
-  };
-
-
-
-  const handleTaskDestroy = (id: string) => {
-    const task = pills.find(p => p.id === id);
-    if (!task) return;
-    
-    // Award XP for destroying a task (100 XP per task)
-    addXP(100);
-    
-    // Remove from main todos array immediately to prevent reappearing
-    onRemovePill(id);
-    
-    // Create arcade explosion
-    const arcadeExplosion: ArcadeExplosion = {
-      id: Date.now().toString(),
-      pillId: id,
-      x: task.x,
-      y: task.y,
-      width: task.width,
-      height: task.height,
-    };
-    
-    setArcadeExplosions(prev => [...prev, arcadeExplosion]);
-    
-    // Remove task immediately to prevent interaction during explosion
-    setPills(prev => prev.filter(p => p.id !== id));
-    
-    const messages = [
-      'Gone. You handled it.',
-      'Off the list. Feels good.',
-      'Progress looks good on you.',
-      'Look at you, getting things done.',
-      "One down. You're on a roll.",
-      'Every task counts. This one too.',
-      "You're building a life, one task at a time.",
-      'Look at you, figuring it out.',
-      'Handled. Moving forward.',
-      "Every task finished is proof you're making it.",
-    ];
-    
-    // Queue toast with smart staggering for consecutive task destruction
-    queueToast(messages[Math.floor(Math.random() * messages.length)]);
-  };
-
-  const handleArcadeExplosionComplete = (explosionId: string) => {
-    // Just remove the explosion animation - todo was already removed in handleTaskDestroy
-    setArcadeExplosions(prev => prev.filter(e => e.id !== explosionId));
-  };
-
-  const handleClearAll = () => {
-    // Get all current pill IDs
-    const allPillIds = pills.map(pill => pill.id);
-    
-    if (allPillIds.length === 0) return;
-
-    // Award XP for each pill being cleared (same as individual destruction - 100 XP each)
-    const xpGained = allPillIds.length * 100;
-    addXP(xpGained);
-
-    // Create arcade explosions for all pills simultaneously with slow motion effect
-    const simultaneousExplosions: ArcadeExplosion[] = allPillIds.map(id => {
-      const task = pills.find(p => p.id === id);
-      if (!task) return null;
-      
-      return {
-        id: `clear-all-${id}-${Date.now()}`,
-        pillId: id,
-        x: task.x,
-        y: task.y,
-        width: task.width,
-        height: task.height,
-        duration: 4000, // 4 seconds for dramatic slow motion effect (2x slower than normal)
-      };
-    }).filter(Boolean) as ArcadeExplosion[];
-
-    // Add all explosion animations at once
-    setArcadeExplosions(prev => [...prev, ...simultaneousExplosions]);
-
-    // Remove all pills from the main todos state in a single operation
-    onRemoveMultiplePills(allPillIds);
-
-    // Clear all local pill states after a brief delay to allow animation to start
+    // Held reaction after 400ms
     setTimeout(() => {
-      setPills([]);
-    }, 100);
-
-    // Show feedback toast
-    toast.success(`Cleared ${allPillIds.length} task${allPillIds.length > 1 ? 's' : ''}! +${xpGained} XP!`, {
-      duration: 3000
-    });
+      if (!dragRef.current || dragRef.current.id !== id) return;
+      const phrases = ["hey!!", "excuse me??", "put me down", "this is fine.", "I'm fine.", "...okay then"];
+      triggerReaction(id, phrases[Math.floor(Math.random() * phrases.length)]);
+    }, 400);
   };
 
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!dragRef.current || !containerRef.current) return;
+    dragRef.current.moved = true;
+    const now = Date.now();
+    pointerHistoryRef.current.push({ x: e.clientX, y: e.clientY, t: now });
+    pointerHistoryRef.current = pointerHistoryRef.current.filter(p => now - p.t < 120).slice(-6);
 
+    const { id } = dragRef.current;
+    const rect = containerRef.current.getBoundingClientRect();
+    const navBottom = rect.bottom;
+    const newX = Math.max(0, Math.min(rect.width - CREATURE_W, e.clientX - rect.left - CREATURE_W / 2));
+    const newY = Math.max(0, navBottom - e.clientY - CREATURE_H / 2);
+    setCreatures(prev => prev.map(c => c.id === id ? { ...c, x: newX, y: newY } : c));
+  };
 
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!dragRef.current) return;
+    const { id, downTime, moved } = dragRef.current;
+    dragRef.current = null;
 
+    const holdMs = Date.now() - downTime;
+    const history = pointerHistoryRef.current;
+
+    // Calculate throw velocity from pointer history
+    let throwVx = (Math.random() > 0.5 ? 1 : -1) * CREATURE_SPEED;
+    let throwVy = 0;
+    let isThrow = false;
+
+    if (history.length >= 2) {
+      const newest = history[history.length - 1];
+      const oldest = history[0];
+      const dt = Math.max(1, newest.t - oldest.t);
+      const rawVx =  (newest.x - oldest.x) / dt * 16;
+      const rawVy = -(newest.y - oldest.y) / dt * 16; // invert: up = positive
+      const speed = Math.sqrt(rawVx * rawVx + rawVy * rawVy);
+      if (speed > 4) {
+        isThrow = true;
+        throwVx = rawVx * 0.4;
+        throwVy = Math.max(0, rawVy * 0.4); // only upward component
+      }
+    }
+
+    // Was it a tap? (quick, barely moved)
+    const isTap = holdMs < 200 && !moved;
+
+    if (isTap) {
+      // Track rapid taps
+      const tap = tapCountRef.current;
+      const now = Date.now();
+      if (tap.id === id && now - tap.lastTime < 1800) {
+        tap.count++;
+      } else {
+        tap.count = 1;
+        tap.id = id;
+      }
+      tap.lastTime = now;
+
+      if (tap.count === 3) {
+        const phrases = ["okay okay CHILL", "i have feelings", "stop it.", "why are you like this", "excuse me??"];
+        triggerReaction(id, phrases[Math.floor(Math.random() * phrases.length)]);
+        setCreatures(prev => prev.map(c => c.id === id ? { ...c, expression: 'angry' as const } : c));
+        setTimeout(() => setCreatures(prev => prev.map(c => c.id === id ? { ...c, expression: 'idle' as const } : c)), 2000);
+      } else if (tap.count === 5) {
+        const phrases = ["I SAID STOP", "...you asked for this", "do NOT", "I am WARNING you", "last chance."];
+        triggerReaction(id, phrases[Math.floor(Math.random() * phrases.length)]);
+        setCreatures(prev => prev.map(c => c.id === id ? { ...c, expression: 'ticking' as const } : c));
+        setTimeout(() => setCreatures(prev => prev.map(c => c.id === id ? { ...c, expression: 'idle' as const } : c)), 2500);
+      } else if (tap.count >= 7) {
+        const secrets = [
+          "i once hid under the sofa for 3 hours and nobody noticed",
+          "i think about cheese more than is probably normal",
+          "i have a favorite cloud shape. it is the lumpy one.",
+          "sometimes i pretend i am asleep to avoid conversations",
+          "i counted all the ceiling tiles in here. it is 0. no ceiling.",
+          "my biggest fear is someone moving my stuff slightly to the left",
+          "i do not know what time it is but i feel like it is always 2pm",
+          "i made up a fake language once. i only know three words.",
+          "i have strong opinions about the correct way to stack things",
+          "i told a rock a secret once. i think it understood.",
+        ];
+        triggerReaction(id, secrets[Math.floor(Math.random() * secrets.length)]);
+        setCreatures(prev => prev.map(c => c.id === id ? { ...c, expression: 'idle' as const } : c));
+        tap.count = 0;
+      }
+
+      // Release creature back to ground on tap
+      setCreatures(prev => prev.map(c => c.id === id ? { ...c, isDragging: false, vx: throwVx, vy: 0 } : c));
+    } else {
+      // Release with throw velocity
+      if (isThrow) {
+        const phrases = ["WHEEEEE", "wait WHAT", "...did you just throw me", "bold move.", "I did not consent to this", "surprisingly fun??", "again??"];
+        triggerReaction(id, phrases[Math.floor(Math.random() * phrases.length)]);
+
+        // Landing reaction after estimated flight time
+        setTimeout(() => {
+          const landing = ["ow.", "I'm okay!!", "10 out of 10.", "...wild.", "cool. cool cool cool.", "stick the landing.", "I meant to do that.", "nobody saw that right"];
+          triggerReaction(id, landing[Math.floor(Math.random() * landing.length)]);
+        }, 900);
+      }
+      setCreatures(prev => prev.map(c =>
+        c.id === id ? { ...c, isDragging: false, vx: throwVx, vy: throwVy } : c
+      ));
+    }
+  };
+
+  // ── When a pill is popped, existing Popples celebrate briefly ────────────
+  const handlePillPopped = () => {
+    setCreatures(prev => prev.map(c => ({ ...c, expression: 'celebrating' as const })));
+    setTimeout(() => {
+      setCreatures(prev => prev.map(c => ({ ...c, expression: 'idle' as const })));
+    }, 3000);
+  };
+
+  const currentTheme = backgroundThemes.find(t => t.id === backgroundTheme);
 
   return (
-    <div className="flex flex-col h-full relative overflow-hidden">
-      
-      {/* Simplified Header - Mobile Optimized */}
-      <div className="relative z-10 px-4 py-3">
-        <div className="pixel-notebook overflow-hidden p-3 rounded-lg">
-          {/* Top Row - Adult Title Left, Theme Icons & Help Right */}
+    <div className="absolute inset-0" onPointerMove={handlePointerMove} onPointerUp={handlePointerUp}>
+
+      {/* ── Header ── */}
+      <div className="relative px-4 py-3">
+        <div className="pixel-notebook p-3 rounded-lg">
+
+          {/* Top row */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex-1">
               <span className="font-pixel text-xs text-gray-700">
-                {levelConfig.find(config => config.level === playerProgress.level)?.title || "Adult in Training"}
+                {levelConfig.find(c => c.level === playerProgress.level)?.title ?? 'Adult in Training'}
               </span>
             </div>
+
             <div className="flex flex-row gap-1 items-center">
-              {/* Help Button */}
+              {/* Notification bell — opens popup */}
               <div className="relative">
                 <Button
-                  ref={helpButtonRef}
+                  size="sm"
+                  variant="ghost"
+                  className="w-8 h-8 p-0 rounded-full relative"
+                  onClick={() => setShowPopup(true)}
+                >
+                  <Bell className="w-3.5 h-3.5" />
+                  <AnimatePresence>
+                    {completedTodos.length > 0 && (
+                      <motion.span
+                        key="badge"
+                        initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}
+                        className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-rose-500 text-white flex items-center justify-center"
+                        style={{ fontSize: 8 }}
+                      >
+                        {completedTodos.length > 9 ? '9+' : completedTodos.length}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </Button>
+              </div>
+
+              {/* Help */}
+              <div className="relative">
+                <Button
+                  ref={helpBtnRef}
                   size="sm"
                   variant="ghost"
                   className="w-8 h-8 p-0 rounded-full"
-                  onClick={() => setShowHelp(!showHelp)}
+                  onClick={() => setShowHelp(v => !v)}
                 >
                   <HelpCircle className="w-3.5 h-3.5" />
                 </Button>
-                
-                {/* Help Popup */}
                 {showHelp && (
                   <>
-                    {/* Backdrop for mobile */}
-                    <div 
-                      className="fixed inset-0 z-[99] sm:hidden" 
-                      onClick={() => setShowHelp(false)}
-                    />
-                    
-                    {/* Popup */}
+                    <div className="fixed inset-0 z-[99]" onClick={() => setShowHelp(false)} />
                     <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                      initial={{ opacity: 0, scale: 0.95, y: -8 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                      className="absolute z-[100] w-56 top-8 -right-1 sm:top-6 sm:-right-1"
+                      exit={{ opacity: 0, scale: 0.95, y: -8 }}
+                      className="absolute z-[100] top-9 -right-1 bg-white rounded-xl shadow-xl border border-gray-200 p-2 flex flex-col gap-1 min-w-[160px]"
                     >
-                      <div className="bg-white rounded-lg shadow-xl border-2 border-gray-200 overflow-hidden">
-                        <div className="p-3">
-                          <div className="mb-2">
-                            <h4 className="font-pixel text-xs text-black"> How to Play</h4>
-                          </div>
-                          
-                          <div className="space-y-1.5 text-xs text-black leading-relaxed">
-                            <p>• Complete tasks to see containers</p>
-                            <p>• Drag around with physics</p>
-                            <p>• Tap 3 times to pop & earn XP</p>
-                            <p>• Level up for new titles!</p>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Arrow pointing up to help button */}
-                      <div className="absolute w-3 h-3 bg-white border-l-2 border-t-2 border-gray-200 transform rotate-45 -top-1.5 right-6"></div>
+                      {[
+                        'complete tasks to earn pills',
+                        'tap bell to open pop space',
+                        'tap a pill 3x to pop it',
+                        'popple lands in your space',
+                      ].map(tip => (
+                        <p key={tip} className="font-pixel text-[9px] text-gray-700 px-1">{tip}</p>
+                      ))}
                     </motion.div>
                   </>
                 )}
               </div>
-              
-              {/* Theme Selection Icons */}
-              {backgroundThemes.map((theme) => {
-                const Icon = theme.icon;
-                return (
-                  <Button
-                    key={theme.id}
-                    onClick={() => onBackgroundThemeChange(theme.id)}
-                    size="sm"
-                    variant={backgroundTheme === theme.id ? "default" : "ghost"}
-                    className="w-8 h-8 p-0 rounded-full"
-                  >
-                    <Icon className="w-3.5 h-3.5" />
-                  </Button>
-                );
-              })}
+
+              {/* Divider */}
+              <div className="w-px h-4 bg-gray-200 mx-0.5" />
+
+              {/* Theme picker — single button opens dropdown */}
+              <div className="relative">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="w-8 h-8 p-0 rounded-full"
+                  onClick={() => setShowThemePicker(v => !v)}
+                >
+                  {currentTheme ? <currentTheme.icon className="w-3.5 h-3.5" /> : <span className="text-xs">🖼</span>}
+                </Button>
+                {showThemePicker && (
+                  <>
+                    <div className="fixed inset-0 z-[99]" onClick={() => setShowThemePicker(false)} />
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: -8 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -8 }}
+                      className="absolute z-[100] top-9 right-0 bg-white rounded-xl shadow-xl border border-gray-200 p-1.5 flex flex-row gap-0.5"
+                    >
+                      {backgroundThemes.map(theme => {
+                        const Icon = theme.icon;
+                        const active = backgroundTheme === theme.id;
+                        return (
+                          <button
+                            key={theme.id}
+                            onClick={() => { onBackgroundThemeChange(theme.id); setShowThemePicker(false); }}
+                            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${active ? 'bg-gray-900 text-white' : 'hover:bg-gray-100 text-gray-700'}`}
+                          >
+                            <Icon className="w-3.5 h-3.5" />
+                          </button>
+                        );
+                      })}
+                    </motion.div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Level & XP Info */}
+          {/* Level & XP */}
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <span className="text-sm">
-                {levelConfig.find(config => config.level === playerProgress.level)?.emoji || ""}
+                {levelConfig.find(c => c.level === playerProgress.level)?.emoji ?? ''}
               </span>
-              <span className="font-pixel text-xs text-black">
-                LVL {playerProgress.level}
-              </span>
+              <span className="font-pixel text-xs text-black">LVL {playerProgress.level}</span>
             </div>
             <span className="font-pixel text-xs text-black">
               {playerProgress.currentXP}/{getXPForNextLevel(playerProgress.level)} XP
             </span>
           </div>
-          
-          {/* Simplified Progress Bar */}
+
           <Progress
-            value={Math.min(100, Math.max(0, (playerProgress.currentXP / Math.max(1, getXPForNextLevel(playerProgress.level))) * 100))}
+            value={Math.min(100, (playerProgress.currentXP / Math.max(1, getXPForNextLevel(playerProgress.level))) * 100)}
             className="w-full h-3 bg-white border border-black/20"
           />
         </div>
 
-      </div>
-
-      {/* Game Area */}
-      <div ref={containerRef} className="flex-1 relative overflow-hidden">
-        {showOnboarding ? (
-          <>
-            {/* Example task containers in background */}
-            {examplePills.map((examplePill, index) => (
-              <motion.div
-                key={examplePill.id}
-                className="absolute opacity-70"
-                style={{
-                  left: examplePill.x,
-                  top: examplePill.y,
-                  width: examplePill.width,
-                  height: examplePill.height,
-                }}
-                animate={{
-                  x: [0, 15 + index * 5, 0],
-                  y: [0, -8 - index * 3, 0],
-                }}
-                transition={{
-                  duration: 4 + index * 0.5,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: index * 0.8,
-                }}
-              >
-                <div 
-                  className="relative pixelated cursor-grab inline-block"
-                  style={{ 
-                    imageRendering: 'pixelated',
-                    width: examplePill.width,
-                    height: examplePill.height
-                  }}
-                >
-                  {/* Rounded container */}
-                  <div 
-                    className="absolute inset-0"
-                  >
-                    {/* Main rounded body */}
-                    <div 
-                      className="absolute bg-white border-2 border-black"
-                      style={{
-                        left: '0px',
-                        right: '0px',
-                        top: '0px',
-                        bottom: '0px',
-                        borderRadius: '16px',
-                      }}
-                    />
-                  </div>
-                  
-                  {/* Text content */}
-                  <div className="absolute flex items-center justify-center" style={{
-                    left: '6px',
-                    right: '6px',
-                    top: '4px',
-                    bottom: '4px'
-                  }}>
-                    <span 
-                      className="text-black pixelated select-none text-center font-pixel"
-                      style={{ 
-                        imageRendering: 'pixelated',
-                        textShadow: 'none',
-                        fontSize: '9px',
-                        lineHeight: '11px',
-                        wordWrap: 'break-word',
-                        hyphens: 'auto',
-                        maxWidth: '100%',
-                        display: '-webkit-box',
-                        WebkitLineClamp: examplePill.height <= 48 ? 2 : 3,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden'
-                      }}
-                    >
-                      {examplePill.text}
-                    </span>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-            
-            {/* Onboarding content overlay - positioned closer to status bar */}
-            <div className="absolute inset-0 flex flex-col items-center text-gray-500 z-50 pointer-events-none" style={{ paddingTop: 'calc(3rem + 32px)' }}>
-              <div className="pointer-events-auto">
-              <motion.div 
-                className="bg-gray-800 rounded-3xl p-8 flex flex-col items-center max-w-sm mx-4 border-2 border-gray-700"
-                animate={{ y: [0, -5, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                <h2 className="text-xl font-medium text-white font-pixel mb-3 text-center">Your space is waiting.</h2>
-                <p className="text-base text-center text-gray-300 font-pixel leading-relaxed mb-6">
-                  Complete a task and watch it appear here as a bubble.
-                </p>
-                
-                {/* Start Button */}
-                <motion.button
-                  onClick={() => setShowOnboarding(false)}
-                  className="bg-white text-black font-pixel text-xs px-6 py-3 rounded-lg border-2 border-gray-200 hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  Start Playing
-                </motion.button>
-              </motion.div>
-              </div>
-            </div>
-          </>
-        ) : (pills.length === 0 && arcadeExplosions.length === 0) ? (
-          <div className="absolute inset-0 flex flex-col items-center text-gray-500 z-50 pointer-events-none" style={{ paddingTop: 'calc(3rem + 32px)' }}>
-            <div className="pointer-events-auto">
-            <motion.div 
-              className="bg-gray-800 rounded-3xl p-8 flex flex-col items-center max-w-sm mx-4 border-2 border-gray-700"
-              animate={{ y: [0, -5, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-              {/* Show different messages based on whether user has ever completed tasks */}
-              {playerProgress.totalXP > 0 ? (
-                <>
-                  <h2 className="text-xl font-medium text-white font-pixel mb-3 text-center">Your space.</h2>
-                  <p className="text-base text-center text-gray-300 font-pixel leading-relaxed">
-                    Complete more tasks to fill it back up.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <h2 className="text-xl font-medium text-white font-pixel mb-3 text-center">Nothing here yet.</h2>
-                  <p className="text-base text-center text-gray-300 font-pixel leading-relaxed">
-                    Add something and watch it land.
-                  </p>
-                </>
-              )}
-            </motion.div>
-            </div>
-          </div>
-        ) : (
-          <>
-
-            {/* Floating containers */}
-            {pills.map(pill => (
-              <TaskContainer
-                key={`task-${pill.id}`}
-                pill={pill}
-                onSelect={handleTaskSelect}
-                onDrag={handleTaskDrag}
-                onRelease={handleTaskRelease}
-                onDestroy={handleTaskDestroy}
-              />
-            ))}
-            
-            {/* Arcade explosion effects */}
-            {arcadeExplosions.map(explosion => (
-              <ArcadeExplosionEffect
-                key={`explosion-${explosion.id}`}
-                x={explosion.x}
-                y={explosion.y}
-                width={explosion.width}
-                height={explosion.height}
-                duration={explosion.duration}
-                onComplete={() => handleArcadeExplosionComplete(explosion.id)}
-              />
-            ))}
-            
-            {/* Legacy celebration effects (if needed) */}
-            {celebrations.map(celebration => (
-              <ParticleEffect
-                key={`celebration-${celebration.id}`}
-                x={celebration.x}
-                y={celebration.y}
-                type={celebration.type}
-              />
-            ))}
-          </>
-        )}
-      </div>
-
-      {/* Fixed Clear All Button - Bottom Center */}
-      {pills.length > 8 && (
-        <div className="fixed left-1/2 transform -translate-x-1/2 z-50" style={{ bottom: 'calc(env(safe-area-inset-bottom) + 5rem)' }}>
-          <Button
-            size="sm"
-            variant="default"
-            className="px-6 py-3 bg-slate-600 hover:bg-slate-700 text-white font-pixel text-xs border-2 border-slate-800 shadow-lg hover:shadow-xl transition-all duration-200 rounded-lg"
-            onClick={handleClearAll}
+        {/* Accessories picker */}
+        <div className="flex justify-end mt-2 relative">
+          <button
+            className="pixel-notebook w-8 h-8 rounded-lg flex items-center justify-center hover:brightness-95 transition-all"
+            onClick={() => setShowAccPicker(v => !v)}
           >
-            Clear All
-          </Button>
+            <Shirt className="w-3.5 h-3.5 text-gray-600" />
+          </button>
+          {showAccPicker && (
+            <>
+              <div className="fixed inset-0 z-[99]" onClick={() => setShowAccPicker(false)} />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: -8 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -8 }}
+                className="absolute z-[100] top-9 right-0 bg-white rounded-xl shadow-xl border border-gray-200 p-1.5 flex flex-row gap-0.5"
+              >
+                {([
+                  { id: null as PoppleAccessory,        icon: (
+                    <svg viewBox="0 0 20 20" width="18" height="18"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" strokeWidth="1.5"/><line x1="7" y1="10" x2="13" y2="10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                  )},
+                  { id: 'beanie' as PoppleAccessory,    icon: (
+                    <svg viewBox="22 4 36 18" width="22" height="14"><ellipse cx="40" cy="13" rx="14" ry="7" fill="#e55a2b"/><rect x="27" y="12" width="26" height="6" rx="3" fill="#e55a2b"/><line x1="33" y1="12" x2="33" y2="18" stroke="rgba(0,0,0,0.2)" strokeWidth="1.5" strokeLinecap="round"/><line x1="40" y1="12" x2="40" y2="18" stroke="rgba(0,0,0,0.2)" strokeWidth="1.5" strokeLinecap="round"/><line x1="47" y1="12" x2="47" y2="18" stroke="rgba(0,0,0,0.2)" strokeWidth="1.5" strokeLinecap="round"/><circle cx="40" cy="6" r="4" fill="white" stroke="#e55a2b" strokeWidth="0.5"/></svg>
+                  )},
+                  { id: 'grad-cap' as PoppleAccessory,  icon: (
+                    <svg viewBox="18 6 44 16" width="22" height="14"><rect x="20" y="9" width="40" height="4" rx="1.5" fill="#1a202c"/><ellipse cx="40" cy="17" rx="10" ry="4" fill="#1a202c"/><line x1="56" y1="9" x2="61" y2="19" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round"/><circle cx="61" cy="20" r="2" fill="#f59e0b"/></svg>
+                  )},
+                  { id: 'crown' as PoppleAccessory,     icon: (
+                    <svg viewBox="23 2 34 16" width="22" height="14"><polygon points="26,15 30,5 34,15" fill="#f59e0b"/><polygon points="35,15 40,2 45,15" fill="#f59e0b"/><polygon points="46,15 50,5 54,15" fill="#f59e0b"/><rect x="24" y="13" width="32" height="6" rx="2" fill="#f59e0b"/><circle cx="30" cy="16" r="1.5" fill="#ef4444"/><circle cx="40" cy="15" r="2" fill="#ef4444"/><circle cx="50" cy="16" r="1.5" fill="#ef4444"/></svg>
+                  )},
+                  { id: 'party-hat' as PoppleAccessory, icon: (
+                    <svg viewBox="22 0 36 22" width="18" height="18"><polygon points="40,1 24,20 56,20" fill="#a78bfa"/><polygon points="40,1 33,13 40,15 47,13" fill="#7c3aed" opacity="0.4"/><circle cx="40" cy="1" r="2.5" fill="#fbbf24"/><line x1="24" y1="20" x2="56" y2="20" stroke="#7c3aed" strokeWidth="1.5"/></svg>
+                  )},
+                ] as { id: PoppleAccessory; icon: React.ReactNode }[]).map(acc => {
+                  const unlocked = true;
+                  const active = equippedAcc === acc.id;
+                  return (
+                    <button
+                      key={String(acc.id)}
+                      disabled={!unlocked}
+                      onClick={() => { if (unlocked) { handleEquip(acc.id); setShowAccPicker(false); } }}
+                      className={`w-9 h-8 flex items-center justify-center rounded-lg transition-colors ${active ? 'bg-gray-900 text-white' : unlocked ? 'hover:bg-gray-100 text-gray-700' : 'opacity-30 cursor-not-allowed text-gray-400'}`}
+                    >
+                      {acc.icon}
+                    </button>
+                  );
+                })}
+              </motion.div>
+            </>
+          )}
         </div>
-      )}
+      </div>
+
+      {/* ── Creature space (for physics bounds) ── */}
+      <div ref={containerRef} className="absolute inset-x-0 pointer-events-none" style={{ top: 0, bottom: 'calc(5rem + env(safe-area-inset-bottom))' }} />
+
+      {/* ── Creatures — anchored to nav bar top via bottom CSS ── */}
+      <AnimatePresence>
+        {creatures.map(creature => (
+          <div
+            key={creature.id}
+            className="absolute"
+            style={{
+              left: creature.x,
+              bottom: `calc(5rem + env(safe-area-inset-bottom) + ${Math.round(creature.y)}px - ${CREATURE_H - CREATURE_FOOT}px)`,
+              cursor: creature.isDragging ? 'grabbing' : 'grab',
+              zIndex: 9999,
+            }}
+            onPointerDown={e => handleCreaturePointerDown(e, creature.id)}
+          >
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 350, damping: 22 }}
+            >
+              <PoppleCharacter
+                expression={creature.expression === 'sleeping' ? 'sleeping' : (creature.expression === 'angry' || creature.expression === 'ticking') ? creature.expression : creature.y > 10 && !creature.isDragging ? 'waiting' : creature.expression}
+                mode={creature.isDragging || creature.y > 10 || creature.expression === 'sleeping' || creature.expression === 'angry' || creature.expression === 'ticking' ? 'idle' : 'walk'}
+                pendingCount={0}
+                accessory={equippedAcc}
+                facingLeft={creature.vx < 0}
+                onClick={() => {}}
+                externalReaction={creature.externalReaction}
+                size={80}
+              />
+            </motion.div>
+          </div>
+        ))}
+      </AnimatePresence>
 
 
+      {/* ── Accessory drawer ── */}
+      <AnimatePresence>
+        {showWardrobe && (
+          <AccessoryDrawer
+            equipped={equippedAcc}
+            totalTasksDone={totalTasksDone}
+            onEquip={handleEquip}
+            onClose={() => setShowWardrobe(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── Popup overlay ── */}
+      <AnimatePresence>
+        {showPopup && (
+          <PopupWorld
+            completedTodos={completedTodos}
+            onRemovePill={onRemovePill}
+            onRemoveMultiplePills={onRemoveMultiplePills}
+            gameSettings={gameSettings}
+            addXP={addXP}
+            backgroundImage={currentTheme?.image ?? ''}
+            onPillPopped={() => handlePillPopped()}
+            onClose={() => setShowPopup(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
