@@ -1173,6 +1173,7 @@ export default function App() {
             onTogglePriority={toggleTodoPriority}
             onReorderTodos={reorderTodos}
             onDeleteTodo={deleteTodo}
+            user={user}
           />
         )}
         

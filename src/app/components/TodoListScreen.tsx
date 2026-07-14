@@ -18,6 +18,7 @@ interface TodoListScreenProps {
   onTogglePriority: (id: string) => void;
   onReorderTodos: (dragIndex: number, hoverIndex: number) => void;
   onDeleteTodo: (id: string) => void;
+  user?: { id: string; email: string; name?: string } | null;
 }
 
 interface DropZoneProps {
@@ -576,6 +577,7 @@ export default function TodoListScreen({
   onTogglePriority,
   onReorderTodos,
   onDeleteTodo,
+  user,
 }: TodoListScreenProps) {
   const activeTodos = todos.filter(todo => !todo.completed && !todo.destroyedAt);
   const priorityTodos = activeTodos.filter(t => t.priority);
@@ -585,18 +587,78 @@ export default function TodoListScreen({
   const [editingText, setEditingText] = useState('');
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [briefing, setBriefing] = useState<string | null>(null);
+  const [isParsingTask, setIsParsingTask] = useState(false);
+
+  const hour = new Date().getHours();
+  const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+  const displayName = user?.name ?? user?.email?.split('@')[0] ?? null;
+
+  const taskCountSentence = (() => {
+    const n = activeTodos.length;
+    if (n === 0) return 'nothing on the list right now.';
+    if (n === 1) return 'you have one thing today.';
+    const words = ['two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+    const word = n <= 10 ? words[n - 2] : n.toString();
+    return `you have ${word} things today.`;
+  })();
+
+  // Fetch AI briefing once on mount
+  useEffect(() => {
+    const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://popple-api.johannahuarachi.workers.dev';
+    const token = localStorage.getItem('popple-token');
+    if (!token) return;
+    const completedYesterday = todos.filter(t => {
+      if (!t.completedAt) return false;
+      const d = new Date(t.completedAt);
+      const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+      return d.toDateString() === yesterday.toDateString();
+    }).length;
+
+    fetch(`${API_BASE}/ai/briefing`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ taskCount: activeTodos.length, completedYesterday, userName: user?.name ?? user?.email ?? '' }),
+    })
+      .then(r => r.json())
+      .then((d: any) => { if (d.briefing) setBriefing(d.briefing); })
+      .catch(() => {});
+  }, []);
+
+  const parseAndAddTask = async () => {
+    const raw = newTodoText.trim();
+    if (!raw) return;
+    const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://popple-api.johannahuarachi.workers.dev';
+    const token = localStorage.getItem('popple-token');
+    if (!token) { onAddTodo(raw); setNewTodoText(''); return; }
+
+    setIsParsingTask(true);
+    try {
+      const res = await fetch(`${API_BASE}/ai/parse-task`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ input: raw }),
+      });
+      const data = await res.json() as { title?: string };
+      onAddTodo(data.title ?? raw);
+    } catch {
+      onAddTodo(raw);
+    } finally {
+      setNewTodoText('');
+      setIsParsingTask(false);
+    }
+  };
 
   const handleInputKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      handleSubmitNewTask();
+      parseAndAddTask();
     }
   };
 
   const handleSubmitNewTask = () => {
     if (newTodoText.trim()) {
-      onAddTodo(newTodoText.trim());
-      setNewTodoText('');
+      parseAndAddTask();
       toast.success('Task added! ', { duration: 3000 });
     }
   };
@@ -677,14 +739,13 @@ export default function TodoListScreen({
           className="flex-shrink-0"
         >
           <div className="pixel-notebook backdrop-blur-xl rounded-t-2xl shadow-lg border border-white/60 border-b-0 p-6">
-            {/* Header */}
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-xl font-pixel text-gray-900" role="heading" aria-level="1">Tasks</h1>
-                <p className="font-space-mono text-sm text-gray-600" aria-live="polite">
-                  {activeTodos.length} remaining
-                </p>
-              </div>
+            <div className="space-y-1">
+              <p className="font-space-mono text-[10px] text-gray-400 uppercase tracking-widest">
+                good {timeOfDay}{displayName ? `, ${displayName}` : ''}
+              </p>
+              <h1 className="font-pixel text-lg text-gray-900 leading-snug">
+                {briefing ?? taskCountSentence}
+              </h1>
             </div>
           </div>
         </motion.div>
@@ -702,19 +763,21 @@ export default function TodoListScreen({
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2">
                   <Input
-                    placeholder="Add Task"
+                    placeholder="Add a task, just type naturally..."
                     value={newTodoText}
                     onChange={(e) => setNewTodoText(e.target.value)}
                     onKeyDown={handleInputKeyDown}
+                    disabled={isParsingTask}
                     className="flex-1 bg-white border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                     aria-label="Add new task"
                   />
                   <Button
                     onClick={handleSubmitNewTask}
+                    disabled={isParsingTask || !newTodoText.trim()}
                     size="sm"
-                    className="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white font-pixel text-[10px] border-2 border-slate-800 shadow-lg hover:shadow-xl transition-all duration-200 rounded-lg min-w-[70px]"
+                    className="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white font-pixel text-[10px] border-2 border-slate-800 shadow-lg hover:shadow-xl transition-all duration-200 rounded-lg min-w-[70px] disabled:opacity-50"
                   >
-                    Submit
+                    {isParsingTask ? '...' : 'Add'}
                   </Button>
                 </div>
                 
