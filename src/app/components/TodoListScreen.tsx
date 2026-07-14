@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 
-import { Button } from './ui/button';
-import { Input } from './ui/input';
 import PixelCheckbox from './PixelCheckbox';
 import { toast } from 'sonner';
 import type { Todo } from '../App';
@@ -589,9 +587,14 @@ export default function TodoListScreen({
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [briefing, setBriefing] = useState<string | null>(null);
   const [isParsingTask, setIsParsingTask] = useState(false);
+  const [fabOpen, setFabOpen] = useState(false);
+  const fabInputRef = useRef<HTMLInputElement>(null);
 
-  const hour = new Date().getHours();
+  const now = new Date();
+  const hour = now.getHours();
   const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+  const dayName = now.toLocaleDateString('en-US', { weekday: 'short' });
+  const dateStr = now.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' });
   const displayName = user?.name ?? user?.email?.split('@')[0] ?? null;
 
   const taskCountSentence = (() => {
@@ -646,20 +649,7 @@ export default function TodoListScreen({
     } finally {
       setNewTodoText('');
       setIsParsingTask(false);
-    }
-  };
-
-  const handleInputKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      parseAndAddTask();
-    }
-  };
-
-  const handleSubmitNewTask = () => {
-    if (newTodoText.trim()) {
-      parseAndAddTask();
-      toast.success('Task added! ', { duration: 3000 });
+      setFabOpen(false);
     }
   };
 
@@ -729,61 +719,46 @@ export default function TodoListScreen({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
       {/* Floating Game UI Container */}
       <div className="flex-1 p-4 flex flex-col min-h-0">
         {/* Header Container */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex-shrink-0"
         >
-          <div className="pixel-notebook backdrop-blur-xl rounded-t-2xl shadow-lg border border-white/60 border-b-0 p-6">
-            <div className="space-y-1">
+          <div className="pixel-notebook backdrop-blur-xl rounded-t-2xl shadow-lg border border-white/60 border-b-0 px-6 pt-5 pb-4">
+            {/* Date row */}
+            <div className="flex items-baseline justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="font-pixel text-2xl text-gray-900 leading-none">{dayName}</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400 mb-0.5 flex-shrink-0" />
+              </div>
+              <div className="text-right">
+                <p className="font-space-mono text-[10px] text-gray-400 leading-tight">{dateStr}</p>
+              </div>
+            </div>
+            {/* Greeting + briefing */}
+            <div className="space-y-0.5">
               <p className="font-space-mono text-[10px] text-gray-400 uppercase tracking-widest">
                 good {timeOfDay}{displayName ? `, ${displayName}` : ''}
               </p>
-              <h1 className="font-pixel text-lg text-gray-900 leading-snug">
+              <h1 className="font-pixel text-base text-gray-900 leading-snug">
                 {briefing ?? taskCountSentence}
               </h1>
             </div>
           </div>
         </motion.div>
 
-        {/* Todo List Container with Sticky Input */}
-        <motion.div 
+        {/* Todo List Container */}
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           className="flex-1 flex flex-col min-h-0"
         >
           <div className="pixel-notebook backdrop-blur-xl rounded-b-2xl shadow-lg border border-white/60 border-t-0 flex-1 flex flex-col min-h-0">
-            {/* Sticky Input Section at Top of List */}
-            <div className="sticky top-0 z-10 pixel-notebook backdrop-blur-xl border-b border-white/60 p-6 flex-shrink-0 overflow-hidden">
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <Input
-                    placeholder="Add a task, just type naturally..."
-                    value={newTodoText}
-                    onChange={(e) => setNewTodoText(e.target.value)}
-                    onKeyDown={handleInputKeyDown}
-                    disabled={isParsingTask}
-                    className="flex-1 bg-white border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                    aria-label="Add new task"
-                  />
-                  <Button
-                    onClick={handleSubmitNewTask}
-                    disabled={isParsingTask || !newTodoText.trim()}
-                    size="sm"
-                    className="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white font-pixel text-[10px] border-2 border-slate-800 shadow-lg hover:shadow-xl transition-all duration-200 rounded-lg min-w-[70px] disabled:opacity-50"
-                  >
-                    {isParsingTask ? '...' : 'Add'}
-                  </Button>
-                </div>
-                
-              </div>
-            </div>
-
             {/* Scrollable Tasks Container */}
             <div 
               className="flex-1 min-h-0 overflow-y-auto custom-scrollbar" 
@@ -927,6 +902,66 @@ export default function TodoListScreen({
             </div>
           </div>
         </motion.div>
+      </div>
+
+      {/* FAB — add task */}
+      <div className="absolute bottom-4 right-4 z-20 flex flex-col items-end gap-2">
+        <AnimatePresence>
+          {fabOpen && (
+            <motion.div
+              key="fab-input"
+              initial={{ opacity: 0, y: 8, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.95 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 360 }}
+              className="flex items-center gap-2 bg-gray-900 rounded-2xl px-4 py-3 shadow-2xl"
+              style={{ minWidth: 240 }}
+            >
+              <input
+                ref={fabInputRef}
+                value={newTodoText}
+                onChange={e => setNewTodoText(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') { e.preventDefault(); parseAndAddTask(); }
+                  if (e.key === 'Escape') { setFabOpen(false); setNewTodoText(''); }
+                }}
+                placeholder="Type a task..."
+                disabled={isParsingTask}
+                className="flex-1 bg-transparent text-white placeholder-gray-500 font-space-mono text-sm outline-none"
+                autoFocus
+              />
+              {isParsingTask ? (
+                <span className="font-space-mono text-xs text-gray-400">...</span>
+              ) : (
+                <button
+                  onClick={parseAndAddTask}
+                  disabled={!newTodoText.trim()}
+                  className="text-white/60 hover:text-white disabled:text-gray-600 transition-colors font-space-mono text-xs"
+                >
+                  ↵
+                </button>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <motion.button
+          onClick={() => {
+            if (fabOpen) { setFabOpen(false); setNewTodoText(''); }
+            else { setFabOpen(true); setTimeout(() => fabInputRef.current?.focus(), 50); }
+          }}
+          whileTap={{ scale: 0.9 }}
+          className="w-12 h-12 rounded-2xl bg-gray-900 text-white flex items-center justify-center shadow-2xl"
+        >
+          <motion.span
+            animate={{ rotate: fabOpen ? 45 : 0 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+            className="text-2xl leading-none select-none"
+            style={{ marginTop: -2 }}
+          >
+            +
+          </motion.span>
+        </motion.button>
       </div>
     </div>
   );
