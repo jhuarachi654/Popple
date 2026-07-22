@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 
 import PixelCheckbox from './PixelCheckbox';
+import PoppleCharacter from './PoppleCharacter';
+import PoppleChat from './PoppleChat';
 import { toast } from 'sonner';
 import type { Todo } from '../App';
-import pixelThumbsUp from 'figma:asset/21c806672f1b177eab013545866a7531db314cdf.png';
 import pixelNoTasksIcon from 'figma:asset/5765ff71efcec8f85a51ea67d9c56fb1dafbd5a1.png';
 
 interface TodoListScreenProps {
@@ -16,7 +18,6 @@ interface TodoListScreenProps {
   onTogglePriority: (id: string) => void;
   onReorderTodos: (dragIndex: number, hoverIndex: number) => void;
   onDeleteTodo: (id: string) => void;
-  user?: { id: string; email: string; name?: string } | null;
 }
 
 interface DropZoneProps {
@@ -575,83 +576,18 @@ export default function TodoListScreen({
   onTogglePriority,
   onReorderTodos,
   onDeleteTodo,
-  user,
 }: TodoListScreenProps) {
   const activeTodos = todos.filter(todo => !todo.completed && !todo.destroyedAt);
   const priorityTodos = activeTodos.filter(t => t.priority);
   const regularTodos = activeTodos.filter(t => !t.priority);
-  const [newTodoText, setNewTodoText] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState('');
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const [briefing, setBriefing] = useState<string | null>(null);
-  const [isParsingTask, setIsParsingTask] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
+  const [newTaskText, setNewTaskText] = useState('');
   const fabInputRef = useRef<HTMLInputElement>(null);
-
-  const now = new Date();
-  const hour = now.getHours();
-  const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
-  const dayName = now.toLocaleDateString('en-US', { weekday: 'short' });
-  const dateStr = now.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' });
-  const displayName = user?.name ?? user?.email?.split('@')[0] ?? null;
-
-  const taskCountSentence = (() => {
-    const n = activeTodos.length;
-    if (n === 0) return 'nothing on the list right now.';
-    if (n === 1) return 'you have one thing today.';
-    const words = ['two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
-    const word = n <= 10 ? words[n - 2] : n.toString();
-    return `you have ${word} things today.`;
-  })();
-
-  // Fetch AI briefing once on mount
-  useEffect(() => {
-    const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://popple-api.johannahuarachi.workers.dev';
-    const token = localStorage.getItem('popple-token');
-    if (!token) return;
-    const completedYesterday = todos.filter(t => {
-      if (!t.completedAt) return false;
-      const d = new Date(t.completedAt);
-      const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-      return d.toDateString() === yesterday.toDateString();
-    }).length;
-
-    fetch(`${API_BASE}/ai/briefing`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ taskCount: activeTodos.length, completedYesterday, userName: user?.name ?? user?.email ?? '' }),
-    })
-      .then(r => r.json())
-      .then((d: any) => { if (d.briefing) setBriefing(d.briefing); })
-      .catch(() => {});
-  }, []);
-
-  const parseAndAddTask = async () => {
-    const raw = newTodoText.trim();
-    if (!raw) return;
-    const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://popple-api.johannahuarachi.workers.dev';
-    const token = localStorage.getItem('popple-token');
-    if (!token) { onAddTodo(raw); setNewTodoText(''); return; }
-
-    setIsParsingTask(true);
-    try {
-      const res = await fetch(`${API_BASE}/ai/parse-task`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ input: raw }),
-      });
-      const data = await res.json() as { title?: string };
-      onAddTodo(data.title ?? raw);
-    } catch {
-      onAddTodo(raw);
-    } finally {
-      setNewTodoText('');
-      setIsParsingTask(false);
-      setFabOpen(false);
-    }
-  };
 
   const handleToggleTodo = (id: string, completed: boolean) => {
     onToggleTodo(id);
@@ -723,36 +659,23 @@ export default function TodoListScreen({
       {/* Floating Game UI Container */}
       <div className="flex-1 p-4 flex flex-col min-h-0">
         {/* Header Container */}
-        <motion.div
+        <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex-shrink-0"
         >
-          <div className="pixel-notebook backdrop-blur-xl rounded-t-2xl shadow-lg border border-white/60 border-b-0 px-6 pt-5 pb-4">
-            {/* Date row */}
-            <div className="flex items-baseline justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <span className="font-pixel text-2xl text-gray-900 leading-none">{dayName}</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-red-400 mb-0.5 flex-shrink-0" />
-              </div>
-              <div className="text-right">
-                <p className="font-space-mono text-[10px] text-gray-400 leading-tight">{dateStr}</p>
-              </div>
-            </div>
-            {/* Greeting + briefing */}
-            <div className="space-y-0.5">
-              <p className="font-space-mono text-[10px] text-gray-400 uppercase tracking-widest">
-                good {timeOfDay}{displayName ? `, ${displayName}` : ''}
+          <div className="pixel-notebook backdrop-blur-xl rounded-t-2xl shadow-lg border border-white/60 border-b-0 p-6">
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl font-pixel text-gray-900" role="heading" aria-level="1">Tasks</h1>
+              <p className="font-space-mono text-sm text-gray-600" aria-live="polite">
+                {activeTodos.length} remaining
               </p>
-              <h1 className="font-pixel text-base text-gray-900 leading-snug">
-                {briefing ?? taskCountSentence}
-              </h1>
             </div>
           </div>
         </motion.div>
 
-        {/* Todo List Container */}
-        <motion.div
+        {/* Todo List Container with Sticky Input */}
+        <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
@@ -760,9 +683,10 @@ export default function TodoListScreen({
         >
           <div className="pixel-notebook backdrop-blur-xl rounded-b-2xl shadow-lg border border-white/60 border-t-0 flex-1 flex flex-col min-h-0">
             {/* Scrollable Tasks Container */}
-            <div 
-              className="flex-1 min-h-0 overflow-y-auto custom-scrollbar" 
-              style={{ WebkitOverflowScrolling: 'touch', height: 'auto', maxHeight: '100%' }}
+            <div
+              className="flex-1 min-h-0 overflow-y-auto custom-scrollbar"
+              style={{ WebkitOverflowScrolling: 'touch', height: 'auto', maxHeight: '100%', paddingBottom: '80px' }}
+
               id="tasks-scroll-container"
             >
               <div className="px-6 pt-0 pb-0">
@@ -904,7 +828,19 @@ export default function TodoListScreen({
         </motion.div>
       </div>
 
-      {/* FAB — add task */}
+      {/* ── Popple — bottom-left, opens chat ── */}
+      <div className="absolute bottom-4 left-4 z-20">
+        <PoppleCharacter
+          expression="idle"
+          pendingCount={0}
+          onClick={() => setChatOpen(true)}
+          size={80}
+          mode="idle"
+          silent
+        />
+      </div>
+
+      {/* ── FAB — add task ── */}
       <div className="absolute bottom-4 right-4 z-20 flex flex-col items-end gap-2">
         <AnimatePresence>
           {fabOpen && (
@@ -919,24 +855,24 @@ export default function TodoListScreen({
             >
               <input
                 ref={fabInputRef}
-                value={newTodoText}
-                onChange={e => setNewTodoText(e.target.value)}
+                value={newTaskText}
+                onChange={e => setNewTaskText(e.target.value)}
                 onKeyDown={e => {
-                  if (e.key === 'Enter') { e.preventDefault(); parseAndAddTask(); }
-                  if (e.key === 'Escape') { setFabOpen(false); setNewTodoText(''); }
+                  if (e.key === 'Enter' && newTaskText.trim()) {
+                    onAddTodo(newTaskText.trim());
+                    setNewTaskText('');
+                    setFabOpen(false);
+                  }
+                  if (e.key === 'Escape') { setFabOpen(false); setNewTaskText(''); }
                 }}
-                placeholder="Type a task..."
-                disabled={isParsingTask}
+                placeholder="add a task…"
                 className="flex-1 bg-transparent text-white placeholder-gray-500 font-space-mono text-sm outline-none"
                 autoFocus
               />
-              {isParsingTask ? (
-                <span className="font-space-mono text-xs text-gray-400">...</span>
-              ) : (
+              {newTaskText.trim() && (
                 <button
-                  onClick={parseAndAddTask}
-                  disabled={!newTodoText.trim()}
-                  className="text-white/60 hover:text-white disabled:text-gray-600 transition-colors font-space-mono text-xs"
+                  onClick={() => { onAddTodo(newTaskText.trim()); setNewTaskText(''); setFabOpen(false); }}
+                  className="text-white/60 hover:text-white transition-colors font-space-mono text-xs"
                 >
                   ↵
                 </button>
@@ -947,7 +883,7 @@ export default function TodoListScreen({
 
         <motion.button
           onClick={() => {
-            if (fabOpen) { setFabOpen(false); setNewTodoText(''); }
+            if (fabOpen) { setFabOpen(false); setNewTaskText(''); }
             else { setFabOpen(true); setTimeout(() => fabInputRef.current?.focus(), 50); }
           }}
           whileTap={{ scale: 0.9 }}
@@ -963,6 +899,19 @@ export default function TodoListScreen({
           </motion.span>
         </motion.button>
       </div>
+
+      {/* ── Popple chat — portal to document.body so it covers the nav bar ── */}
+      {createPortal(
+        <AnimatePresence>
+          {chatOpen && (
+            <PoppleChat
+              onAddTodo={onAddTodo}
+              onClose={() => setChatOpen(false)}
+            />
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }

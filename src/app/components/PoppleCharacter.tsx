@@ -13,6 +13,7 @@ interface Props {
   size?:           number;
   accessory?:      PoppleAccessory;
   facingLeft?:     boolean;
+  silent?:         boolean;
   // External reaction trigger — changes whenever parent wants to show a specific bubble
   externalReaction?: { text: string; nonce: number };
 }
@@ -101,6 +102,7 @@ export default function PoppleCharacter({
   size             = 100,
   accessory        = null,
   facingLeft       = false,
+  silent           = false,
   externalReaction,
 }: Props) {
   const controls               = useAnimation();
@@ -153,6 +155,7 @@ export default function PoppleCharacter({
   const handleClick = (e: React.MouseEvent | React.TouchEvent) => {
     e.stopPropagation();
     if (reacting) return;
+    if (silent) { onClick(); return; }
     setReacting(true);
     showBubble(pickRandom(sayings));
     const anim = CLICK_REACTIONS[acc] ?? CLICK_REACTIONS.default;
@@ -342,7 +345,6 @@ export default function PoppleCharacter({
           >
             {/* Legs */}
             {isSleeping ? (
-              // Tucked legs — folded inward under body
               <>
                 <line x1="29" y1="60" x2="22" y2="70" stroke={C} strokeWidth="10" strokeLinecap="round"/>
                 <line x1="51" y1="60" x2="58" y2="70" stroke={C} strokeWidth="10" strokeLinecap="round"/>
@@ -362,18 +364,14 @@ export default function PoppleCharacter({
 
             {/* Body */}
             <circle cx="40" cy="40" r="21" fill={C}/>
-            {/* Top */}
             <circle cx="40" cy="20" r="9"  fill={C}/>
-            {/* Top-right → right → bottom-right */}
             <circle cx="51" cy="22" r="8"  fill={C}/>
             <circle cx="59" cy="31" r="8"  fill={C}/>
             <circle cx="61" cy="42" r="8"  fill={C}/>
             <circle cx="56" cy="53" r="7"  fill={C}/>
-            {/* Bottom */}
             <circle cx="50" cy="57" r="7"  fill={C}/>
             <circle cx="40" cy="59" r="7"  fill={C}/>
             <circle cx="30" cy="57" r="7"  fill={C}/>
-            {/* Bottom-left → left → top-left */}
             <circle cx="24" cy="53" r="7"  fill={C}/>
             <circle cx="19" cy="42" r="8"  fill={C}/>
             <circle cx="21" cy="31" r="8"  fill={C}/>
@@ -420,7 +418,7 @@ export default function PoppleCharacter({
               </g>
             )}
 
-            {/* Eyes — always on top */}
+            {/* Eyes */}
             {isSleeping && (
               <>
                 <path d="M 28.5 38 Q 32 34.5 35.5 38" stroke="white" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
@@ -429,7 +427,6 @@ export default function PoppleCharacter({
             )}
             {(isAngry || isTicking) && (
               <>
-                {/* Flipped + tilted inward eyes */}
                 <path d="M 28.5 37 A 3.5 3.5 0 0 0 35.5 37 Z" fill="white" transform="rotate(20, 32, 37)"/>
                 <path d="M 44.5 37 A 3.5 3.5 0 0 0 51.5 37 Z" fill="white" transform="rotate(-20, 48, 37)"/>
               </>
