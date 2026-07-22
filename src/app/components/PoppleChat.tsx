@@ -30,7 +30,7 @@ function saveMemory(entries: { title: string; outcome: 'accepted' | 'declined' }
   try { localStorage.setItem(MEMORY_KEY, JSON.stringify(entries.slice(-10))); } catch {}
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://popple-api.johannahuarachi.workers.dev';
+const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://popple-api.johanna-huarachi.workers.dev';
 const DIFF: Record<string, { pill: string; label: string }> = {
   easy:   { pill: 'bg-emerald-100 text-emerald-700', label: 'quick win'   },
   medium: { pill: 'bg-amber-100 text-amber-700',     label: 'some effort' },
