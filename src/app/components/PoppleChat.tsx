@@ -206,17 +206,17 @@ function ScanChecklist({ scan, onConfirm, onDismiss }: {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 12 }}
-      className="flex-shrink-0 mx-4 mb-2 bg-white border border-gray-100 rounded-2xl shadow-lg overflow-hidden"
+      className="flex-shrink-0 mx-4 mb-2 bg-gray-50 border border-gray-200 rounded-2xl shadow-md overflow-hidden"
     >
       <div className="px-4 pt-3 pb-1">
         <p className="font-space-mono text-xs text-gray-400">check the ones you want to add</p>
       </div>
-      <ul className="divide-y divide-gray-50">
+      <ul className="divide-y divide-gray-200">
         {scan.tasks.map((task, i) => (
           <li key={task.id}>
             <button
               onClick={() => toggle(i)}
-              className="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-gray-50"
+              className="w-full flex items-center gap-3 px-4 py-3 text-left bg-white active:bg-gray-50"
             >
               <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                 selected[i] ? 'bg-gray-900 border-gray-900' : 'border-gray-300'
@@ -228,7 +228,7 @@ function ScanChecklist({ scan, onConfirm, onDismiss }: {
           </li>
         ))}
       </ul>
-      <div className="flex items-center gap-2 px-4 py-3 border-t border-gray-100">
+      <div className="flex items-center gap-2 px-4 py-3 border-t border-gray-200 bg-white">
         <motion.button
           onClick={() => onConfirm(selected)}
           whileTap={{ scale: 0.97 }}
