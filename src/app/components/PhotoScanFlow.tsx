@@ -80,21 +80,25 @@ function SwipeCard({
     else if (info.offset.x < -SWIPE_THRESHOLD) onDecline();
   };
 
-  const cardPos = cardAtBottom ? { bottom: 28 } : { top: 96 };
+  // On mobile: position card based on where the region is in the image
+  // On desktop: always bottom-center, wider
+  const cardPos = isTouch
+    ? (cardAtBottom ? { bottom: 28, left: 16, right: 16 } : { top: 96, left: 16, right: 16 })
+    : { bottom: 40, left: '50%', right: 'auto', transform: 'translateX(-50%)', width: 420 };
 
   return (
     <motion.div
       key={task.id}
-      initial={{ opacity: 0, y: cardAtBottom ? 20 : -20 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ type: 'spring', damping: 26, stiffness: 300 }}
-      className="absolute left-4 right-4 z-20"
+      className="absolute z-20"
       style={cardPos}
     >
-      {/* Popple delivering the task */}
+      {/* Popple delivering the task — bottom center on desktop, inline on mobile */}
       <motion.div
-        className="flex items-end gap-2 mb-2 px-1"
+        className={`flex items-end gap-2 mb-2 px-1 ${!isTouch ? 'justify-center' : ''}`}
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
@@ -103,14 +107,13 @@ function SwipeCard({
           expression={poppleMood}
           pendingCount={0}
           onClick={() => {}}
-          size={36}
+          size={isTouch ? 36 : 48}
           mode="idle"
           silent
         />
         {/* Speech bubble */}
         <div className="relative bg-black/75 backdrop-blur-md rounded-2xl rounded-bl-sm px-3 py-2 max-w-[80%]">
           <p className="font-space-mono text-[11px] text-white/80 leading-relaxed">{task.coach_note}</p>
-          {/* bubble tail */}
           <div className="absolute -bottom-1.5 left-3 w-3 h-3 bg-black/75 [clip-path:polygon(0_0,100%_0,0_100%)]" />
         </div>
       </motion.div>
@@ -125,30 +128,19 @@ function SwipeCard({
           style={{ x, rotate }}
           className="bg-black/80 backdrop-blur-md rounded-3xl px-5 py-4 border border-white/10 cursor-grab active:cursor-grabbing select-none relative overflow-hidden"
         >
-          {/* Accept hint — slides in from right as user drags right */}
-          <motion.div
-            style={{ opacity: acceptOpacity }}
-            className="absolute inset-y-0 right-0 flex items-center pr-5 pointer-events-none"
-          >
+          <motion.div style={{ opacity: acceptOpacity }} className="absolute inset-y-0 right-0 flex items-center pr-5 pointer-events-none">
             <div className="flex items-center gap-1.5 border border-emerald-400 text-emerald-400 rounded-xl px-3 py-1.5 rotate-6">
               <Check size={12} weight="bold" />
               <span className="font-space-mono text-[9px]">add</span>
             </div>
           </motion.div>
-          {/* Decline hint — slides in from left as user drags left */}
-          <motion.div
-            style={{ opacity: declineOpacity }}
-            className="absolute inset-y-0 left-0 flex items-center pl-5 pointer-events-none"
-          >
+          <motion.div style={{ opacity: declineOpacity }} className="absolute inset-y-0 left-0 flex items-center pl-5 pointer-events-none">
             <div className="flex items-center gap-1.5 border border-rose-400 text-rose-400 rounded-xl px-3 py-1.5 -rotate-6">
               <X size={12} weight="bold" />
               <span className="font-space-mono text-[9px]">skip</span>
             </div>
           </motion.div>
-
           <p className="font-pixel text-lg text-white leading-snug pr-8">{task.title}</p>
-
-          {/* Subtle drag affordance arrows */}
           <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/10">
             <ArrowLeft size={14} className="text-white/20" />
             <ArrowRight size={14} className="text-white/20" />
@@ -157,17 +149,17 @@ function SwipeCard({
       ) : (
         /* ── Desktop: click options ── */
         <div className="bg-black/80 backdrop-blur-md rounded-3xl overflow-hidden border border-white/10">
-          <div className="px-5 py-4">
-            <p className="font-pixel text-lg text-white leading-snug">{task.title}</p>
+          <div className="px-6 py-5">
+            <p className="font-pixel text-xl text-white leading-snug">{task.title}</p>
           </div>
           <div className="h-px bg-white/10" />
           <motion.button
             onClick={onAccept}
             whileHover={{ backgroundColor: 'rgba(52,211,153,0.12)' }}
             whileTap={{ scale: 0.98 }}
-            className="w-full px-5 py-3 flex items-center gap-3 text-left"
+            className="w-full px-6 py-4 flex items-center gap-3 text-left"
           >
-            <Check size={16} className="text-emerald-400" weight="bold" />
+            <Check size={18} className="text-emerald-400" weight="bold" />
             <span className="font-space-mono text-sm text-white">Add this task</span>
           </motion.button>
           <div className="h-px bg-white/10" />
@@ -175,9 +167,9 @@ function SwipeCard({
             onClick={onDecline}
             whileHover={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
             whileTap={{ scale: 0.98 }}
-            className="w-full px-5 py-3 flex items-center gap-3 text-left"
+            className="w-full px-6 py-4 flex items-center gap-3 text-left"
           >
-            <X size={16} className="text-white/30" weight="bold" />
+            <X size={18} className="text-white/30" weight="bold" />
             <span className="font-space-mono text-sm text-white/50">Skip</span>
           </motion.button>
         </div>
@@ -259,7 +251,7 @@ export default function PhotoScanFlow({ imagePreview, tasks, onAccept, onDecline
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
-      <div className="relative w-full h-full" style={{ maxWidth: 480, maxHeight: '100dvh' }}>
+      <div className="relative w-full h-full">
         <AnimatePresence mode="wait">
 
           {/* ── SCAN phase ── */}
