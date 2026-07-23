@@ -28,6 +28,7 @@ type ActiveScan = {
 interface Props {
   onAddTodo: (title: string) => void;
   onClose: () => void;
+  initialMessage?: string;
 }
 
 const MEMORY_KEY = 'popple-coach-memory';
@@ -252,11 +253,14 @@ function ScanChecklist({ scan, onConfirm, onDismiss }: {
 
 // ── Main chat ─────────────────────────────────────────────────────────────────
 
-export default function PoppleChat({ onAddTodo, onClose }: Props) {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: 'intro', role: 'popple', text: "hey! tell me what's on your mind — or show me a list." },
-    { id: 'hint', role: 'popple', text: "try the sample photo", isSampleHint: true },
-  ]);
+export default function PoppleChat({ onAddTodo, onClose, initialMessage }: Props) {
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    const base: ChatMessage[] = [
+      { id: 'intro', role: 'popple', text: initialMessage ?? "hey! tell me what's on your mind — or show me a list." },
+    ];
+    if (!initialMessage) base.push({ id: 'hint', role: 'popple', text: "try the sample photo", isSampleHint: true });
+    return base;
+  });
   const [inputText, setInputText] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);

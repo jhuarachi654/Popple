@@ -42,29 +42,13 @@ export default function SettingsScreen({ user, isGuestMode, onLogout, onRestartO
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 p-4 flex flex-col">
-
-        {/* Header — matches Tasks / Record */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex-shrink-0"
-        >
-          <div className="bg-white/95 backdrop-blur-xl rounded-t-2xl shadow-lg border border-white/60 border-b-0 p-6 pixel-notebook">
-            <h1 className="text-xl font-pixel text-gray-900">Settings</h1>
-          </div>
-        </motion.div>
-
-        {/* Body — matches Record */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="flex-1 flex flex-col min-h-0"
-        >
-          <div className="bg-white/95 backdrop-blur-xl rounded-b-2xl shadow-lg border border-white/60 border-t-0 pixel-notebook flex-1 overflow-y-auto">
-            <div className="p-6 space-y-3 pb-4">
+    <div className="flex flex-col h-full relative">
+      <div className="absolute inset-0">
+        <div className="pt-6 px-4 h-full flex flex-col pb-0">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 flex flex-col min-h-0">
+            <div className="bg-white/95 backdrop-blur-xl rounded-t-2xl shadow-lg border border-white/60 pixel-notebook flex-1 overflow-y-auto custom-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="p-6 space-y-3 pb-32">
+              <h1 className="text-xl font-pixel text-gray-900 mb-4">Settings</h1>
 
               {/* ── App section label ── */}
               <p className="font-space-mono text-[10px] text-gray-400 uppercase tracking-widest px-1">App</p>
@@ -166,9 +150,9 @@ export default function SettingsScreen({ user, isGuestMode, onLogout, onRestartO
               </button>
 
             </div>
-          </div>
-        </motion.div>
-
+            </div>
+          </motion.div>
+        </div>
       </div>
     </div>
   );

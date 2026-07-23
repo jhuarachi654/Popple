@@ -3,7 +3,7 @@ import { motion, AnimatePresence, useAnimation } from 'motion/react';
 
 export type PoppleExpression = 'idle' | 'waiting' | 'celebrating' | 'sleeping' | 'angry' | 'ticking';
 export type PoppleMode       = 'idle' | 'walk';
-export type PoppleAccessory  = 'beanie' | 'grad-cap' | 'crown' | 'party-hat' | null;
+export type PoppleAccessory  = 'beanie' | 'flower' | 'dog-ears' | 'crown' | null;
 
 interface Props {
   expression:      PoppleExpression;
@@ -42,14 +42,22 @@ const SAYINGS: Record<string, string[]> = {
     'soft hours only.',
     'everything is better wrapped up.',
   ],
-  'grad-cap': [
-    'citation needed', 'coffee count: 4', 'technically...',
-    'according to my research, today is good',
-    'I have strong thoughts about this',
-    '*adjusts glasses*', 'well actually—',
-    'did you know? you are doing great.',
-    'hypothesis: today will be fine.',
-    'evidence suggests: you got this.',
+  flower: [
+    'blooming today.', 'petals out, worries gone.',
+    'growing at my own pace.', 'soft and sturdy.',
+    'sun? yes please.', '*sways gently*',
+    'everything blooms eventually.',
+    'a little sunshine goes a long way.',
+    'planted. watered. thriving.',
+    'I am the garden and the gardener.',
+  ],
+  'dog-ears': [
+    '*perks up*', 'did someone say walk??',
+    'good boy/girl energy only.', 'ears: active.',
+    '*tail wag intensifies*', 'fetch? fetch!!',
+    'loyalty: 100.', 'bork.',
+    'sniff sniff... something good is coming.',
+    'I am very excited about today.',
   ],
   crown: [
     'as expected.', 'obviously.', 'beneath me, but sure.',
@@ -71,23 +79,23 @@ const SAYINGS: Record<string, string[]> = {
 // ── Click reaction body animations ───────────────────────────────────────────
 const CLICK_REACTIONS: Record<string, object> = {
   default:     { y: [0, -18, -4, 0],  scale: [1, 1.1, 0.94, 1],  rotate: [0, 0, 0, 0]       },
-  beanie:      { y: [0, -8, 0],        scale: [1, 1.02, 1],         rotate: [0, -10, 10, -5, 0] },
-  'grad-cap':  { y: [0, -22, 0],       scale: [1, 1.15, 0.92, 1],  rotate: [0, 0, 0, 0]       },
-  crown:       { y: [0, -6, 0],        scale: [1, 1.04, 1],         rotate: [0, -5, 5, -3, 0]  },
-  'party-hat': { y: [0, -24, -8, 0],  scale: [1, 1.2, 0.88, 1],   rotate: [0, 14, -14, 0]    },
+  beanie:      { y: [0, -8, 0],        scale: [1, 1.02, 1],        rotate: [0, -10, 10, -5, 0] },
+  flower:      { y: [0, -12, 0],       scale: [1, 1.08, 0.95, 1],  rotate: [0, -8, 8, 0]       },
+  'dog-ears':  { y: [0, -16, -4, 0],  scale: [1, 1.12, 0.9, 1],   rotate: [0, 10, -10, 0]     },
+  crown:       { y: [0, -6, 0],        scale: [1, 1.04, 1],        rotate: [0, -5, 5, -3, 0]   },
 };
 
 // ── Idle animation personality ────────────────────────────────────────────────
 const IDLE_ANIM: Record<string, object> = {
   default:     { y: [0, -8, 0, -2, 0],  scaleY: [1, 1.05, 0.93, 1.01, 1], scaleX: [1, 0.96, 1.07, 0.99, 1] },
   beanie:      { y: [0, -4, 0, -1, 0],  scaleY: [1, 1.02, 0.98, 1,    1], scaleX: [1, 0.99, 1.02, 0.99, 1] },
-  'grad-cap':  { y: [0, -10, 0, -3, 0], scaleY: [1, 1.06, 0.94, 1.02, 1], scaleX: [1, 0.98, 1.04, 0.99, 1] },
+  flower:      { y: [0, -7, 0, -2, 0],  scaleY: [1, 1.04, 0.96, 1.01, 1], scaleX: [1, 0.97, 1.04, 0.99, 1] },
+  'dog-ears':  { y: [0, -9, 0, -3, 0],  scaleY: [1, 1.05, 0.93, 1.02, 1], scaleX: [1, 0.96, 1.06, 0.99, 1] },
   crown:       { y: [0, -6, 0, -2, 0],  scaleY: [1, 1.03, 0.97, 1.01, 1], scaleX: [1, 0.97, 1.04, 0.99, 1] },
-  'party-hat': { y: [0, -13, 0, -4, 0], scaleY: [1, 1.07, 0.91, 1.03, 1], scaleX: [1, 0.94, 1.09, 0.99, 1] },
 };
 
 const IDLE_DUR: Record<string, number> = {
-  default: 2.6, beanie: 3.6, 'grad-cap': 2.1, crown: 3.0, 'party-hat': 1.7,
+  default: 2.6, beanie: 3.6, flower: 3.0, 'dog-ears': 2.2, crown: 3.0,
 };
 
 function pickRandom<T>(arr: T[]): T {
@@ -265,38 +273,6 @@ export default function PoppleCharacter({
         </div>
       )}
 
-      {accessory === 'grad-cap' && (
-        <motion.div className="absolute pointer-events-none"
-          style={{ bottom: size * 1.1 + 4, left: '50%', transform: 'translateX(-50%)' }}
-          animate={{ opacity: [0, 1, 1, 0], y: [4 * scale, 0, 0, -6 * scale] }}
-          transition={{ duration: 5.0, repeat: Infinity, ease: 'easeInOut' }}>
-          <svg width={28 * scale} height={20 * scale} viewBox="0 0 28 20">
-            <rect x="1" y="2" width="26" height="16" rx="2" fill="#3b82f6"/>
-            <rect x="13" y="2" width="2" height="16" fill="#1d4ed8"/>
-            <line x1="4" y1="7"  x2="11" y2="7"  stroke="white" strokeWidth="1.2" strokeLinecap="round" opacity="0.7"/>
-            <line x1="4" y1="11" x2="11" y2="11" stroke="white" strokeWidth="1.2" strokeLinecap="round" opacity="0.7"/>
-            <line x1="17" y1="7"  x2="24" y2="7"  stroke="white" strokeWidth="1.2" strokeLinecap="round" opacity="0.7"/>
-            <line x1="17" y1="11" x2="24" y2="11" stroke="white" strokeWidth="1.2" strokeLinecap="round" opacity="0.7"/>
-          </svg>
-        </motion.div>
-      )}
-
-      {accessory === 'party-hat' && (
-        <div className="absolute pointer-events-none overflow-visible"
-             style={{ bottom: size * 1.1, left: '50%', transform: 'translateX(-50%)' }}>
-          {[
-            { color: '#0ea5e9', left: -16, delay: 0.0 },
-            { color: '#a78bfa', left: -4,  delay: 0.4 },
-            { color: '#34d399', left:  8,  delay: 0.2 },
-            { color: '#fb923c', left:  20, delay: 0.6 },
-          ].map((c, i) => (
-            <motion.div key={i} className="absolute rounded-sm"
-              style={{ width: 5 * scale, height: 5 * scale, background: c.color, left: c.left * scale }}
-              animate={{ y: [0, -24 * scale], opacity: [1, 0], rotate: [0, 180] }}
-              transition={{ duration: 1.2, repeat: Infinity, delay: c.delay, ease: 'easeIn' }}/>
-          ))}
-        </div>
-      )}
 
       {/* ── Celebrating confetti ── */}
       <AnimatePresence>
@@ -392,14 +368,28 @@ export default function PoppleCharacter({
                 <circle cx="40" cy="7" r="5" fill="white"/>
               </g>
             )}
-            {accessory === 'grad-cap' && (
+            {accessory === 'flower' && (
               <g>
-                <ellipse cx="40" cy="18" rx="11" ry="5" fill="#1a202c"/>
-                <rect x="29" y="14" width="22" height="5" fill="#1a202c"/>
-                <rect x="20" y="11" width="40" height="5" rx="1.5" fill="#1a202c"/>
-                <rect x="22" y="8"  width="36" height="5" rx="2"   fill="#1a202c"/>
-                <line x1="56" y1="10" x2="63" y2="26" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round"/>
-                <circle cx="63" cy="27" r="3" fill="#f59e0b"/>
+                {/* stem */}
+                <rect x="38" y="5" width="4" height="10" rx="2" fill="#4ade80"/>
+                {/* petals */}
+                <circle cx="40" cy="5" r="5" fill="#f9a8d4"/>
+                <circle cx="34" cy="7" r="4" fill="#f472b6"/>
+                <circle cx="46" cy="7" r="4" fill="#f472b6"/>
+                <circle cx="36" cy="1" r="4" fill="#fb7185"/>
+                <circle cx="44" cy="1" r="4" fill="#fb7185"/>
+                {/* center */}
+                <circle cx="40" cy="5" r="3" fill="#fbbf24"/>
+              </g>
+            )}
+            {accessory === 'dog-ears' && (
+              <g>
+                {/* left ear */}
+                <ellipse cx="24" cy="14" rx="7" ry="10" fill="#92400e" transform="rotate(-15 24 14)"/>
+                <ellipse cx="24" cy="14" rx="4" ry="7"  fill="#c8a97e" transform="rotate(-15 24 14)"/>
+                {/* right ear */}
+                <ellipse cx="56" cy="14" rx="7" ry="10" fill="#92400e" transform="rotate(15 56 14)"/>
+                <ellipse cx="56" cy="14" rx="4" ry="7"  fill="#c8a97e" transform="rotate(15 56 14)"/>
               </g>
             )}
             {accessory === 'crown' && (
