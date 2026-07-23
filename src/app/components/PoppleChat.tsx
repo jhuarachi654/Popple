@@ -25,7 +25,7 @@ type ActiveScan = {
 };
 
 interface Props {
-  onAddTodo: (title: string) => void;
+  onAddTodo: (title: string, dueDate?: string) => void;
   onClose: () => void;
   initialMessage?: string;
 }
@@ -283,8 +283,10 @@ export default function PoppleChat({ onAddTodo, onClose, initialMessage }: Props
   const scrollToBottom = () => { setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 60); };
   useEffect(scrollToBottom, [messages]);
 
+  const todayStr = new Date().toISOString().split('T')[0];
+
   const handleAddTodo = useCallback((title: string) => {
-    onAddTodo(title);
+    onAddTodo(title, todayStr);
     const updated = [...memory, { title, outcome: 'accepted' as const }].slice(-10);
     setMemory(updated);
     saveMemory(updated);
