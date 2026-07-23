@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import PoppleCharacter from './PoppleCharacter';
 import PhotoScanFlow from './PhotoScanFlow';
 import CameraCapture from './CameraCapture';
-import { Camera, Image, ArrowElbowDownLeft, Microphone } from '@phosphor-icons/react';
+import { Camera, Image, ArrowElbowDownLeft, Microphone, ArrowRight } from '@phosphor-icons/react';
 import type { ExtractedTask } from './TaskSwipeDeck';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -35,6 +35,67 @@ function saveMemory(entries: { title: string; outcome: 'accepted' | 'declined' }
 }
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://popple-api.johanna-huarachi.workers.dev';
+
+// Returns a conversational reply if the text isn't a task, otherwise null
+function getConversationalReply(text: string): string | null {
+  const t = text.trim().toLowerCase();
+  const clean = t.replace(/[^a-z0-9 ']/g, '').trim();
+  const words = clean.split(/\s+/).filter(Boolean);
+
+  // Greetings
+  if (/^(hey|hi|hello|sup|yo|hiya|howdy|heya|helo|hai)\b/.test(clean) && words.length <= 4) {
+    const replies = [
+      "hey!! what are we tackling today?",
+      "hi!! ready when you are — what's on your mind?",
+      "hey you!! tell me what needs doing.",
+    ];
+    return replies[Math.floor(Math.random() * replies.length)];
+  }
+
+  // How are you / status check
+  if (/how are you|how('?re| are) (you|things|it going)|you good|you okay|you alright/.test(clean)) {
+    return "honestly thriving. you?? also — what tasks do we have today?";
+  }
+
+  // Emotional / overwhelmed
+  if (/^(ugh+|ughhh|argh|ahh+|omg|oh no|oh god|help|stressed|overwhelmed|exhausted|tired|burnt out|so much|too much|a lot|lots|so many)\b/.test(clean)
+    || /i (have|got) (so much|a lot|too much|tons|loads)/.test(clean)
+    || /i('?m| am) (stressed|overwhelmed|exhausted|tired|lost|behind|stuck|so behind)/.test(clean)) {
+    const replies = [
+      "okay okay, take a breath. tell me everything — I'll help you sort it.",
+      "sounds like a lot. just start talking and I'll pull out the tasks.",
+      "got you. what's weighing on you most right now?",
+    ];
+    return replies[Math.floor(Math.random() * replies.length)];
+  }
+
+  // Confusion / surprise
+  if (/^(wait|huh|what|wut|hmm+|hm+|um+|uh+)\b/.test(clean) && words.length <= 3) {
+    return "ha — sorry if that was confusing! want to try again?";
+  }
+
+  // Sadness / frustration (short emotional expressions)
+  if (/^(:\(|:\-\(|sad|ugh|bleh|meh|nope|nah|no)$/.test(t.replace(/\s/g, '')) && words.length <= 2) {
+    return "aw, that's okay. what's going on? maybe I can help.";
+  }
+
+  // Acknowledgements / short affirmations
+  if (/^(thanks|thank you|thx|ty|cheers|cool|nice|ok|okay|great|awesome|perfect|got it|sounds good|yep|yeah|sure|yup|k)\b/.test(clean) && words.length <= 3) {
+    return "anytime! anything else you need help with?";
+  }
+
+  // Task-like signals — let it through to AI
+  const taskSignals = /\b(need to|have to|should|must|want to|going to|gonna|gotta|buy|call|email|text|send|write|fix|clean|wash|do|finish|complete|submit|schedule|book|pick up|drop off|remind|check|review|read|pay|order|update|make|get|find|prepare|plan|set up|move|pack|unpack|reply|respond)\b/;
+  if (taskSignals.test(clean)) return null;
+
+  // Anything very short with no task verbs — conversational
+  if (words.length <= 2) {
+    return "hmm, not sure what to do with that! try telling me something you need to get done.";
+  }
+
+  // Let the AI handle anything else
+  return null;
+}
 const DIFF: Record<string, { pill: string; label: string }> = {
   easy:   { pill: 'bg-emerald-100 text-emerald-700', label: 'quick win'   },
   medium: { pill: 'bg-amber-100 text-amber-700',     label: 'some effort' },
@@ -89,18 +150,20 @@ function ChatBubble({ msg, onAddTodo, onUseSample, accessory }: { msg: ChatMessa
 
   if (msg.isSampleHint) {
     return (
-      <div className="flex items-start gap-2 pl-10">
-        <div className="flex flex-col gap-1.5">
-          <span className="font-space-mono text-xs text-gray-400">{msg.text}</span>
-          <motion.button
-            whileTap={{ scale: 0.97 }}
-            onClick={onUseSample}
-            className="overflow-hidden rounded-2xl border-2 border-gray-200 shadow-md active:scale-95 transition-transform"
-            style={{ width: 140, height: 100 }}
-          >
-            <img src="/sample-room.webp" alt="sample room" className="w-full h-full object-cover" />
-          </motion.button>
-        </div>
+      <div className="flex items-start gap-2 pl-12">
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={onUseSample}
+          className="flex flex-col gap-1.5 text-left"
+        >
+          <div className="overflow-hidden rounded-2xl border-2 border-gray-200 shadow-md" style={{ width: 140, height: 100 }}>
+            <img src="/sample-desk.jpg" alt="sample desk" className="w-full h-full object-cover" />
+          </div>
+          <span className="flex items-center gap-1 font-space-mono text-[10px] text-gray-400">
+            <ArrowRight size={10} />
+            {msg.text}
+          </span>
+        </motion.button>
       </div>
     );
   }
@@ -153,7 +216,7 @@ function ChatBubble({ msg, onAddTodo, onUseSample, accessory }: { msg: ChatMessa
 export default function PoppleChat({ onAddTodo, onClose }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     { id: 'intro', role: 'popple', text: "hey! tell me what's on your mind — or show me a list." },
-    { id: 'hint', role: 'popple', text: "💡 try the sample photo →", isSampleHint: true },
+    { id: 'hint', role: 'popple', text: "try the sample photo", isSampleHint: true },
   ]);
   const [inputText, setInputText] = useState('');
   const [isListening, setIsListening] = useState(false);
@@ -166,6 +229,7 @@ export default function PoppleChat({ onAddTodo, onClose }: Props) {
   const [scanImage, setScanImage] = useState<string | null>(null);
   const [scanTasks, setScanTasks] = useState<ExtractedTask[] | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const scanAcceptedRef = useRef<ExtractedTask[]>([]);
 
   const accessory = useMemo(() => {
     try { return (localStorage.getItem('popple-accessory') as import('./PoppleCharacter').PoppleAccessory) ?? null; } catch { return null; }
@@ -239,21 +303,8 @@ export default function PoppleChat({ onAddTodo, onClose }: Props) {
     const msgId = `user-${Date.now()}`;
     setMessages(prev => [...prev, { id: msgId, role: 'user', text }]);
 
-    // Detect greetings / chit-chat — reply conversationally instead of extracting tasks
-    const lower = text.toLowerCase().replace(/[^a-z0-9 ]/g, '');
-    const isChitChat = /^(hey|hi|hello|sup|yo|hiya|howdy|helo)[\s!?]*$/.test(lower)
-      || /how are you|how('?re| are) (you|things)|what'?s up|you good|you okay/.test(lower)
-      || /^(thanks|thank you|thx|ty|cheers|cool|nice|ok|okay|great|awesome|got it|sounds good)[\s!?]*$/.test(lower);
-
-    if (isChitChat) {
-      const replies = [
-        "hey!! doing great, ready to help you crush your list 💪",
-        "good!! what are we tackling today?",
-        "always good when you're here! what's on your mind?",
-        "living my best pixel life. what do you need?",
-        "honestly thriving. you?? also what tasks do we have today",
-      ];
-      const reply = replies[Math.floor(Math.random() * replies.length)];
+    const reply = getConversationalReply(text);
+    if (reply) {
       setMessages(prev => [...prev, { id: `popple-${Date.now()}`, role: 'popple', text: reply }]);
       return;
     }
@@ -308,6 +359,7 @@ export default function PoppleChat({ onAddTodo, onClose }: Props) {
   // ── Photo → scan flow ─────────────────────────────────────────────────────
 
   const startScan = useCallback(async (dataUrl: string, base64: string, mimeType: string) => {
+    scanAcceptedRef.current = [];
     setScanImage(dataUrl);
     setScanTasks(null);
     const recentActivity = memory.filter(e => e.outcome === 'accepted').slice(-5).map(e => e.title);
@@ -340,7 +392,7 @@ export default function PoppleChat({ onAddTodo, onClose }: Props) {
 
   const handleUseSample = useCallback(async () => {
     setMessages(prev => prev.filter(m => !m.isSampleHint));
-    const res = await fetch('/sample-room.webp');
+    const res = await fetch('/sample-desk.jpg');
     const blob = await res.blob();
     const reader = new FileReader();
     reader.onload = () => {
@@ -365,6 +417,7 @@ export default function PoppleChat({ onAddTodo, onClose }: Props) {
 
   const handleScanAccept = useCallback((task: ExtractedTask) => {
     handleAddTodo(task.title);
+    scanAcceptedRef.current = [...scanAcceptedRef.current, task];
   }, [handleAddTodo]);
 
   const handleScanDecline = useCallback((task: ExtractedTask) => {
@@ -374,8 +427,28 @@ export default function PoppleChat({ onAddTodo, onClose }: Props) {
   }, [memory]);
 
   const handleScanDone = useCallback(() => {
+    const accepted = scanAcceptedRef.current;
+    scanAcceptedRef.current = [];
     setScanImage(null);
     setScanTasks(null);
+
+    // Post scan summary back into chat
+    const n = accepted.length;
+    const followUp = n === 0
+      ? "no worries — nothing added. scan again whenever you're ready."
+      : n === 1
+      ? `added "${accepted[0].title}" to your list. one down!`
+      : `added ${n} tasks to your list. let's knock them out.`;
+
+    setMessages(prev => [
+      ...prev,
+      {
+        id: `scan-summary-${Date.now()}`,
+        role: 'popple' as const,
+        text: followUp,
+        tasks: accepted.length > 0 ? accepted : undefined,
+      },
+    ]);
   }, []);
 
   useEffect(() => { return () => { recognitionRef.current?.stop(); }; }, []);
