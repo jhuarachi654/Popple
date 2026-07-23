@@ -1168,6 +1168,7 @@ export default function App() {
         
         {activeScreen === 'game' && (
           <GameScreen
+            isGuestMode={isGuestMode}
             completedTodos={completedTodos}
             onRemovePill={removePillFromGame}
             onRemoveMultiplePills={removeMultiplePillsFromGame}

@@ -116,7 +116,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
                 onChange={(e) => onSetEditingText(e.target.value)}
                 onKeyDown={onEditKeyDown}
                 onBlur={onSaveEdit}
-                className="flex-1 bg-white/95 border-2 border-blue-400 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm font-space-mono px-3 py-2 min-h-[44px] resize-none overflow-hidden"
+                className="flex-1 bg-white/95 border-2 border-blue-400 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-[12.5px] sm:text-sm font-space-mono px-3 py-2 min-h-[44px] resize-none overflow-hidden"
                 autoFocus
                 aria-label="Edit task"
                 rows={1}
@@ -129,7 +129,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
               />
             ) : (
               <div
-                className={`flex-1 edit-text-area font-space-mono break-words text-sm leading-snug rounded-md px-2 py-0 transition-all duration-200 ${
+                className={`flex-1 edit-text-area font-space-mono break-words text-[12.5px] sm:text-sm leading-snug rounded-md px-2 py-0 transition-all duration-200 ${
                   todo.completed
                     ? 'text-gray-400 line-through cursor-default'
                     : 'text-gray-900 cursor-text hover:bg-blue-50/70 hover:shadow-sm border border-transparent hover:border-blue-200/50'
@@ -149,11 +149,13 @@ const TodoItem: React.FC<TodoItemProps> = ({
                 {todo.text}
               </div>
             )}
-            {!todo.completed && (todo.dueDate || editingId === todo.id) && (
+            {!todo.completed && (
               <button
                 ref={dateButtonRef}
                 onClick={openPicker}
-                className={`flex-shrink-0 font-space-mono text-[10px] px-2 py-0.5 rounded-md border transition-all ${
+                className={`flex-shrink-0 font-space-mono text-[10px] px-2 rounded-md border transition-all leading-none ${
+                  todo.dueDate ? 'py-[2px]' : 'py-[2px] opacity-0 group-hover/task:opacity-100'
+                } ${
                   todo.dueDate
                     ? badge?.neutral
                       ? 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'
@@ -164,15 +166,6 @@ const TodoItem: React.FC<TodoItemProps> = ({
                 {todo.dueDate
                   ? badge?.label ?? new Date(todo.dueDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                   : '+ date'}
-              </button>
-            )}
-            {!todo.completed && !todo.dueDate && editingId !== todo.id && (
-              <button
-                ref={dateButtonRef}
-                onClick={openPicker}
-                className="flex-shrink-0 font-space-mono text-[10px] px-2 py-0.5 rounded-md border text-gray-400 border-gray-200 hover:text-gray-600 hover:border-gray-300 transition-all opacity-0 group-hover/task:opacity-100"
-              >
-                + date
               </button>
             )}
           </div>
@@ -499,39 +492,142 @@ export default function TodoListScreen({
           >
             <div className="pixel-notebook rounded-t-2xl shadow-lg border border-white/60 flex-1 pb-32">
               {/* Header */}
-              <div className="px-6 pt-6 pb-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div onClick={() => setChatOpen(true)} onMouseEnter={showHint} onMouseLeave={hideHint} className="cursor-pointer flex-shrink-0 -mt-2 relative flex flex-col items-center">
-                      <AnimatePresence>
-                        {poppleHintVisible && (
-                          <div className="absolute pointer-events-none" style={{ bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: 6 }}>
-                            <motion.div
-                              initial={{ opacity: 0, y: 6, scale: 0.85 }}
-                              animate={{ opacity: 1, y: 0, scale: 1 }}
-                              exit={{ opacity: 0, y: 6, scale: 0.9 }}
-                              transition={{ type: 'spring', stiffness: 400, damping: 24 }}
-                              className="bg-gray-800 text-white rounded-lg shadow-lg relative"
-                              style={{ padding: 8, whiteSpace: 'nowrap' }}
-                            >
-                              <span className="font-pixel" style={{ fontSize: 7, lineHeight: 1, display: 'block', marginTop: -2 }}>task support?</span>
-                              <div className="absolute left-1/2 -translate-x-1/2 -bottom-[5px] w-0 h-0"
-                                   style={{ borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid #1f2937' }} />
-                            </motion.div>
-                          </div>
-                        )}
-                      </AnimatePresence>
-                      <PoppleCharacter expression="idle" pendingCount={0} onClick={() => setChatOpen(true)} size={48} mode="idle" silent accessory={accessory} />
-                    </div>
+              <div className="px-6 pt-6 pb-4 relative">
+                <div className="flex flex-col gap-1">
+                  <div className="flex flex-col">
+                    <span className="font-space-mono text-xs text-gray-400">
+                      {now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                    </span>
                     <h1 className="text-xl font-pixel text-gray-900" role="heading" aria-level="1">Hi there!</h1>
                   </div>
-                  <span className="font-space-mono text-xs text-gray-400 mt-1">
-                    {now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                  </span>
                 </div>
                 {summary ? (
                   <p className="font-space-mono text-sm text-gray-400 mt-1" aria-live="polite">{summary}</p>
                 ) : null}
+
+                {/* + button + Popple top-right of header */}
+                <div ref={fabContainerRef} className="absolute top-4 right-4 flex flex-col items-end gap-2 z-20">
+                  <div className="flex items-center gap-2">
+                  <AnimatePresence>
+                    {fabOpen && (
+                      <motion.div
+                        key="fab-input"
+                        initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                        transition={{ type: 'spring', damping: 28, stiffness: 360 }}
+                        className="flex flex-col gap-2 bg-white border border-gray-200 rounded-2xl px-4 py-3 shadow-2xl absolute top-full right-0 mt-2"
+                        style={{ minWidth: 260 }}
+                      >
+                        <div className="flex items-center gap-2">
+                          <input
+                            ref={fabInputRef}
+                            value={newTaskText}
+                            onChange={e => setNewTaskText(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter' && newTaskText.trim()) {
+                                onAddTodo(newTaskText.trim(), newTaskDue || undefined);
+                                setNewTaskText(''); setNewTaskDue(''); setFabOpen(false); setShowDatePicker(false);
+                              }
+                              if (e.key === 'Escape') { setFabOpen(false); setNewTaskText(''); setNewTaskDue(''); setShowDatePicker(false); }
+                            }}
+                            placeholder="add a task…"
+                            className="flex-1 bg-transparent text-gray-900 placeholder-gray-400 font-space-mono text-sm outline-none"
+                            autoFocus
+                          />
+                          {newTaskText.trim() && (
+                            <button
+                              onClick={() => {
+                                onAddTodo(newTaskText.trim(), newTaskDue || undefined);
+                                setNewTaskText(''); setNewTaskDue(''); setFabOpen(false); setShowDatePicker(false);
+                              }}
+                              className="text-gray-400 hover:text-gray-900 transition-colors font-space-mono text-xs"
+                            >↵</button>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {newTaskDue ? (
+                            <button
+                              onClick={() => { setNewTaskDue(''); setShowDatePicker(false); }}
+                              className="flex items-center gap-1 bg-cyan-50 border border-cyan-300 text-cyan-700 font-space-mono text-[10px] px-2 py-0.5 rounded-md"
+                            >
+                              {newTaskDue === todayStr
+                                ? 'today'
+                                : newTaskDue === (() => { const d = new Date(now); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; })()
+                                  ? 'tomorrow'
+                                  : new Date(newTaskDue + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              <span className="text-cyan-400 ml-0.5">×</span>
+                            </button>
+                          ) : (
+                            <>
+                              <button onClick={() => setNewTaskDue(todayStr)} className="font-space-mono text-[10px] text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 border border-gray-200 hover:border-cyan-300 px-2 py-0.5 rounded-md transition-all">today</button>
+                              <button onClick={() => { const d = new Date(now); d.setDate(d.getDate() + 1); setNewTaskDue(d.toISOString().split('T')[0]); }} className="font-space-mono text-[10px] text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 border border-gray-200 hover:border-cyan-300 px-2 py-0.5 rounded-md transition-all">tomorrow</button>
+                              <button onClick={() => { const d = new Date(); setCalMonth({ year: d.getFullYear(), month: d.getMonth() }); setShowDatePicker(p => !p); }} className="font-space-mono text-[10px] text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 border border-gray-200 hover:border-cyan-300 px-2 py-0.5 rounded-md transition-all">pick date</button>
+                            </>
+                          )}
+                        </div>
+                        <AnimatePresence>
+                          {showDatePicker && (
+                            <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }} transition={{ duration: 0.15 }}
+                              className="bg-white border border-gray-200 rounded-xl shadow-lg p-3 mt-1">
+                              <div className="flex items-center justify-between mb-2">
+                                <button onClick={() => setCalMonth(m => { const d = new Date(m.year, m.month - 1); return { year: d.getFullYear(), month: d.getMonth() }; })} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-500 font-space-mono text-sm">‹</button>
+                                <span className="font-space-mono text-[10px] text-gray-700 uppercase tracking-wide">{new Date(calMonth.year, calMonth.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
+                                <button onClick={() => setCalMonth(m => { const d = new Date(m.year, m.month + 1); return { year: d.getFullYear(), month: d.getMonth() }; })} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-500 font-space-mono text-sm">›</button>
+                              </div>
+                              <div className="grid grid-cols-7 mb-1">{['S','M','T','W','T','F','S'].map((d, i) => <div key={i} className="text-center font-space-mono text-[9px] text-gray-400 py-0.5">{d}</div>)}</div>
+                              <div className="grid grid-cols-7 gap-y-0.5">
+                                {(() => {
+                                  const firstDay = new Date(calMonth.year, calMonth.month, 1).getDay();
+                                  const daysInMonth = new Date(calMonth.year, calMonth.month + 1, 0).getDate();
+                                  const cells: React.ReactNode[] = [];
+                                  for (let i = 0; i < firstDay; i++) cells.push(<div key={`e${i}`} />);
+                                  for (let d = 1; d <= daysInMonth; d++) {
+                                    const dateStr = `${calMonth.year}-${String(calMonth.month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                                    const isPast = dateStr < todayStr; const isSelected = dateStr === newTaskDue; const isToday = dateStr === todayStr;
+                                    cells.push(<button key={d} disabled={isPast} onClick={() => { setNewTaskDue(dateStr); setShowDatePicker(false); }}
+                                      className={`w-full aspect-square flex items-center justify-center rounded-lg font-space-mono text-[10px] transition-all ${isPast ? 'text-gray-300 cursor-default' : ''} ${isSelected ? 'bg-gray-900 text-white' : ''} ${isToday && !isSelected ? 'border border-gray-900 text-gray-900' : ''} ${!isPast && !isSelected && !isToday ? 'text-gray-700 hover:bg-cyan-50 hover:text-cyan-700' : ''}`}>{d}</button>);
+                                  }
+                                  return cells;
+                                })()}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  <div onClick={() => setChatOpen(true)} onMouseEnter={showHint} onMouseLeave={hideHint} className="cursor-pointer relative flex flex-col items-center">
+                    <AnimatePresence>
+                      {poppleHintVisible && (
+                        <div className="absolute pointer-events-none" style={{ bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: 6 }}>
+                          <motion.div
+                            initial={{ opacity: 0, y: 6, scale: 0.85 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 6, scale: 0.9 }}
+                            transition={{ type: 'spring', stiffness: 400, damping: 24 }}
+                            className="bg-gray-800 text-white rounded-lg shadow-lg relative"
+                            style={{ padding: 8, whiteSpace: 'nowrap' }}
+                          >
+                            <span className="font-pixel" style={{ fontSize: 7, lineHeight: 1, display: 'block', marginTop: -2 }}>task support?</span>
+                            <div className="absolute left-1/2 -translate-x-1/2 -bottom-[5px] w-0 h-0"
+                                 style={{ borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid #1f2937' }} />
+                          </motion.div>
+                        </div>
+                      )}
+                    </AnimatePresence>
+                    <PoppleCharacter expression="idle" pendingCount={0} onClick={() => setChatOpen(true)} size={40} mode="idle" silent accessory={accessory} />
+                  </div>
+                  <motion.button
+                    onClick={() => {
+                      if (fabOpen) { setFabOpen(false); setNewTaskText(''); setNewTaskDue(''); setShowDatePicker(false); }
+                      else { setFabOpen(true); setTimeout(() => fabInputRef.current?.focus(), 50); }
+                    }}
+                    whileTap={{ scale: 0.9 }}
+                    className="w-9 h-9 rounded-xl bg-gray-900 text-white flex items-center justify-center shadow-lg"
+                  >
+                    <motion.span animate={{ rotate: fabOpen ? 45 : 0 }} transition={{ type: 'spring', damping: 20, stiffness: 300 }} className="text-2xl leading-none select-none" style={{ marginTop: -2 }}>+</motion.span>
+                  </motion.button>
+                  </div>
+                </div>
               </div>
               <div className="px-6 pt-0 pb-0">
                 {activeTodos.length === 0 ? (
@@ -696,138 +792,18 @@ export default function TodoListScreen({
       </div>
 
 
-      {/* ── FAB — add task ── */}
-      <div ref={fabContainerRef} className="fixed right-4 z-20 flex flex-col items-end gap-2" style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom) + 1rem)' }}>
+
+      {/* ── FAB overlay ── */}
+      {createPortal(
         <AnimatePresence>
           {fabOpen && (
-            <motion.div
-              key="fab-input"
-              initial={{ opacity: 0, y: 8, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 8, scale: 0.95 }}
-              transition={{ type: 'spring', damping: 28, stiffness: 360 }}
-              className="flex flex-col gap-2 bg-white border border-gray-200 rounded-2xl px-4 py-3 shadow-2xl"
-              style={{ minWidth: 260 }}
-            >
-              <div className="flex items-center gap-2">
-                <input
-                  ref={fabInputRef}
-                  value={newTaskText}
-                  onChange={e => setNewTaskText(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && newTaskText.trim()) {
-                      onAddTodo(newTaskText.trim(), newTaskDue || undefined);
-                      setNewTaskText(''); setNewTaskDue(''); setFabOpen(false); setShowDatePicker(false);
-                    }
-                    if (e.key === 'Escape') { setFabOpen(false); setNewTaskText(''); setNewTaskDue(''); setShowDatePicker(false); }
-                  }}
-                  placeholder="add a task…"
-                  className="flex-1 bg-transparent text-gray-900 placeholder-gray-400 font-space-mono text-sm outline-none"
-                  autoFocus
-                />
-                {newTaskText.trim() && (
-                  <button
-                    onClick={() => {
-                      onAddTodo(newTaskText.trim(), newTaskDue || undefined);
-                      setNewTaskText(''); setNewTaskDue(''); setFabOpen(false); setShowDatePicker(false);
-                    }}
-                    className="text-gray-400 hover:text-gray-900 transition-colors font-space-mono text-xs"
-                  >
-                    ↵
-                  </button>
-                )}
-              </div>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {newTaskDue ? (
-                  <button
-                    onClick={() => { setNewTaskDue(''); setShowDatePicker(false); }}
-                    className="flex items-center gap-1 bg-cyan-50 border border-cyan-300 text-cyan-700 font-space-mono text-[10px] px-2 py-0.5 rounded-md"
-                  >
-                    {newTaskDue === todayStr
-                      ? 'today'
-                      : newTaskDue === (() => { const d = new Date(now); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; })()
-                        ? 'tomorrow'
-                        : new Date(newTaskDue + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    <span className="text-cyan-400 ml-0.5">×</span>
-                  </button>
-                ) : (
-                  <>
-                    <button onClick={() => setNewTaskDue(todayStr)} className="font-space-mono text-[10px] text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 border border-gray-200 hover:border-cyan-300 px-2 py-0.5 rounded-md transition-all">today</button>
-                    <button onClick={() => { const d = new Date(now); d.setDate(d.getDate() + 1); setNewTaskDue(d.toISOString().split('T')[0]); }} className="font-space-mono text-[10px] text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 border border-gray-200 hover:border-cyan-300 px-2 py-0.5 rounded-md transition-all">tomorrow</button>
-                    <button onClick={() => { const d = new Date(); setCalMonth({ year: d.getFullYear(), month: d.getMonth() }); setShowDatePicker(p => !p); }} className="font-space-mono text-[10px] text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 border border-gray-200 hover:border-cyan-300 px-2 py-0.5 rounded-md transition-all">pick date</button>
-                  </>
-                )}
-              </div>
-              {/* Custom calendar */}
-              <AnimatePresence>
-                {showDatePicker && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 4 }}
-                    transition={{ duration: 0.15 }}
-                    className="bg-white border border-gray-200 rounded-xl shadow-lg p-3 mt-1"
-                  >
-                    {/* Month nav */}
-                    <div className="flex items-center justify-between mb-2">
-                      <button onClick={() => setCalMonth(m => { const d = new Date(m.year, m.month - 1); return { year: d.getFullYear(), month: d.getMonth() }; })} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-500 font-space-mono text-sm">‹</button>
-                      <span className="font-space-mono text-[10px] text-gray-700 uppercase tracking-wide">
-                        {new Date(calMonth.year, calMonth.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                      </span>
-                      <button onClick={() => setCalMonth(m => { const d = new Date(m.year, m.month + 1); return { year: d.getFullYear(), month: d.getMonth() }; })} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-500 font-space-mono text-sm">›</button>
-                    </div>
-                    {/* Day headers */}
-                    <div className="grid grid-cols-7 mb-1">
-                      {['S','M','T','W','T','F','S'].map((d, i) => (
-                        <div key={i} className="text-center font-space-mono text-[9px] text-gray-400 py-0.5">{d}</div>
-                      ))}
-                    </div>
-                    {/* Day grid */}
-                    <div className="grid grid-cols-7 gap-y-0.5">
-                      {(() => {
-                        const firstDay = new Date(calMonth.year, calMonth.month, 1).getDay();
-                        const daysInMonth = new Date(calMonth.year, calMonth.month + 1, 0).getDate();
-                        const cells: React.ReactNode[] = [];
-                        for (let i = 0; i < firstDay; i++) cells.push(<div key={`e${i}`} />);
-                        for (let d = 1; d <= daysInMonth; d++) {
-                          const dateStr = `${calMonth.year}-${String(calMonth.month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-                          const isPast = dateStr < todayStr;
-                          const isSelected = dateStr === newTaskDue;
-                          const isToday = dateStr === todayStr;
-                          cells.push(
-                            <button
-                              key={d}
-                              disabled={isPast}
-                              onClick={() => { setNewTaskDue(dateStr); setShowDatePicker(false); }}
-                              className={`w-full aspect-square flex items-center justify-center rounded-lg font-space-mono text-[10px] transition-all
-                                ${isPast ? 'text-gray-300 cursor-default' : ''}
-                                ${isSelected ? 'bg-gray-900 text-white' : ''}
-                                ${isToday && !isSelected ? 'border border-gray-900 text-gray-900' : ''}
-                                ${!isPast && !isSelected && !isToday ? 'text-gray-700 hover:bg-cyan-50 hover:text-cyan-700' : ''}
-                              `}
-                            >{d}</button>
-                          );
-                        }
-                        return cells;
-                      })()}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
+            <motion.div key="fab-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }} className="fixed inset-0 z-[19] bg-black/40"
+              onClick={() => { setFabOpen(false); setNewTaskText(''); setNewTaskDue(''); setShowDatePicker(false); }} />
           )}
-        </AnimatePresence>
-        <motion.button
-          onClick={() => {
-            if (fabOpen) { setFabOpen(false); setNewTaskText(''); setNewTaskDue(''); setShowDatePicker(false); }
-            else { setFabOpen(true); setTimeout(() => fabInputRef.current?.focus(), 50); }
-          }}
-          whileTap={{ scale: 0.9 }}
-          className="w-12 h-12 rounded-2xl bg-gray-900 text-white flex items-center justify-center shadow-2xl"
-        >
-          <motion.span animate={{ rotate: fabOpen ? 45 : 0 }} transition={{ type: 'spring', damping: 20, stiffness: 300 }} className="text-2xl leading-none select-none" style={{ marginTop: -2 }}>+</motion.span>
-        </motion.button>
-      </div>
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* ── Popple chat — portal to document.body so it covers the nav bar ── */}
       {createPortal(
