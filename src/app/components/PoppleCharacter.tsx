@@ -111,6 +111,8 @@ export default function PoppleCharacter({
   const bubbleTimer            = useRef<ReturnType<typeof setTimeout>>();
   const periodicTimer          = useRef<ReturnType<typeof setTimeout>>();
   const lastNonce              = useRef<number>(-1);
+  const mounted                = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   const isWalking     = mode === 'walk' && expression !== 'sleeping' && expression !== 'angry' && expression !== 'ticking';
   const isCelebrating = expression === 'celebrating';
@@ -129,7 +131,7 @@ export default function PoppleCharacter({
     setReacting(true);
     const anim = CLICK_REACTIONS[acc] ?? CLICK_REACTIONS.default;
     controls.start({ ...anim, transition: { duration: 0.5, ease: 'easeOut' } })
-      .then(() => setReacting(false));
+      .then(() => { if (mounted.current) setReacting(false); });
   }, [externalReaction]);
 
   // ── Periodic personality blurb ─────────────────────────────────────────────
@@ -147,9 +149,10 @@ export default function PoppleCharacter({
   }, [acc, reacting, silent]);
 
   const showBubble = (text: string) => {
+    if (!mounted.current) return;
     setBubble(text);
     clearTimeout(bubbleTimer.current);
-    bubbleTimer.current = setTimeout(() => setBubble(null), 3200);
+    bubbleTimer.current = setTimeout(() => { if (mounted.current) setBubble(null); }, 3200);
   };
 
   // ── Click reaction ─────────────────────────────────────────────────────────
@@ -161,7 +164,7 @@ export default function PoppleCharacter({
     showBubble(pickRandom(sayings));
     const anim = CLICK_REACTIONS[acc] ?? CLICK_REACTIONS.default;
     controls.start({ ...anim, transition: { duration: 0.55, ease: 'easeOut' } }).then(() => {
-      setReacting(false);
+      if (mounted.current) setReacting(false);
     });
     onClick();
   };
