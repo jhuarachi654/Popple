@@ -9,46 +9,32 @@ const DIFF: Record<string, { pill: string; label: string }> = {
   hard:   { pill: 'bg-rose-100 text-rose-700',       label: 'big one'     },
 };
 
-type Phase = 'scanning' | 'revealing' | 'reviewing';
+type Phase = 'scanning' | 'reviewing';
 
 interface Props {
   imagePreview: string;
-  tasks: ExtractedTask[] | null; // null = still loading
+  tasks: ExtractedTask[] | null;
   onAccept: (task: ExtractedTask) => void;
   onDecline: (task: ExtractedTask) => void;
   onDone: () => void;
 }
 
-const MIN_SCAN_MS = 2800; // always show the scan animation for at least this long
+const MIN_SCAN_MS = 2800;
 
 export default function PhotoScanFlow({ imagePreview, tasks, onAccept, onDecline, onDone }: Props) {
   const [phase, setPhase] = useState<Phase>('scanning');
-  const [revealedCount, setRevealedCount] = useState(0);
   const [current, setCurrent] = useState(0);
   const [accepted, setAccepted] = useState(0);
   const scanStartRef = React.useRef(Date.now());
 
-  // Once tasks arrive, wait for minimum scan time before revealing
   useEffect(() => {
     if (tasks === null) return;
     if (tasks.length === 0) { onDone(); return; }
     const elapsed = Date.now() - scanStartRef.current;
     const remaining = Math.max(0, MIN_SCAN_MS - elapsed);
-    const t = setTimeout(() => setPhase('revealing'), remaining);
+    const t = setTimeout(() => setPhase('reviewing'), remaining);
     return () => clearTimeout(t);
   }, [tasks]);
-
-  // Stagger task reveal one by one
-  useEffect(() => {
-    if (phase !== 'revealing' || !tasks) return;
-    if (revealedCount >= tasks.length) {
-      // All revealed — pause then go to review
-      const t = setTimeout(() => setPhase('reviewing'), 800);
-      return () => clearTimeout(t);
-    }
-    const t = setTimeout(() => setRevealedCount(c => c + 1), 420);
-    return () => clearTimeout(t);
-  }, [phase, revealedCount, tasks]);
 
   const handleAccept = () => {
     if (!tasks) return;
@@ -71,142 +57,108 @@ export default function PhotoScanFlow({ imagePreview, tasks, onAccept, onDecline
 
   return (
     <motion.div
-      className="fixed inset-0 z-[10010] bg-black/70 flex items-center justify-center"
+      className="fixed inset-0 z-[10010] bg-black flex items-center justify-center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
-    <div className="relative w-full h-full flex flex-col" style={{ maxWidth: 480, maxHeight: '100dvh' }}>
-      <AnimatePresence mode="wait">
+      <div className="relative w-full h-full" style={{ maxWidth: 480, maxHeight: '100dvh' }}>
+        <AnimatePresence mode="wait">
 
-        {/* ── SCAN phase ── */}
-        {phase === 'scanning' && (
-          <motion.div
-            key="scan"
-            className="flex-1 relative overflow-hidden"
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            {/* Full-screen photo */}
-            <img src={imagePreview} alt="" className="absolute inset-0 w-full h-full object-cover opacity-80" />
-
-            {/* Dark vignette */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60" />
-
-            {/* Sweep line */}
+          {/* ── SCAN phase ── */}
+          {phase === 'scanning' && (
             <motion.div
-              className="absolute left-0 right-0 h-0.5 bg-white/60 shadow-[0_0_12px_4px_rgba(255,255,255,0.3)]"
-              initial={{ top: '0%' }}
-              animate={{ top: '100%' }}
-              transition={{ duration: 2.2, ease: 'linear', repeat: Infinity }}
-            />
+              key="scan"
+              className="absolute inset-0 overflow-hidden"
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <img src={imagePreview} alt="" className="absolute inset-0 w-full h-full object-cover opacity-80" />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60" />
 
-            {/* Corner scan brackets */}
-            {[['top-6 left-6', 'border-t-2 border-l-2'], ['top-6 right-6', 'border-t-2 border-r-2'],
-              ['bottom-24 left-6', 'border-b-2 border-l-2'], ['bottom-24 right-6', 'border-b-2 border-r-2']
-            ].map(([pos, border], i) => (
               <motion.div
-                key={i}
-                className={`absolute w-6 h-6 border-white/80 ${pos} ${border}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: [0, 1, 0.6, 1] }}
-                transition={{ duration: 1.2, delay: i * 0.1, repeat: Infinity }}
+                className="absolute left-0 right-0 h-0.5 bg-white/60 shadow-[0_0_12px_4px_rgba(255,255,255,0.3)]"
+                initial={{ top: '0%' }}
+                animate={{ top: '100%' }}
+                transition={{ duration: 2.2, ease: 'linear', repeat: Infinity }}
               />
-            ))}
 
-            {/* Status */}
-            <div className="absolute bottom-0 left-0 right-0 px-6 pb-12 flex flex-col items-center gap-3">
-              <PoppleCharacter expression="waiting" pendingCount={0} onClick={() => {}} size={56} mode="idle" silent />
-              <motion.p
-                className="font-space-mono text-white text-xs tracking-widest uppercase"
-                animate={{ opacity: [0.4, 1, 0.4] }}
-                transition={{ duration: 1.4, repeat: Infinity }}
-              >
-                scanning…
-              </motion.p>
-            </div>
-          </motion.div>
-        )}
+              {[['top-6 left-6', 'border-t-2 border-l-2'], ['top-6 right-6', 'border-t-2 border-r-2'],
+                ['bottom-24 left-6', 'border-b-2 border-l-2'], ['bottom-24 right-6', 'border-b-2 border-r-2']
+              ].map(([pos, border], i) => (
+                <motion.div
+                  key={i}
+                  className={`absolute w-6 h-6 border-white/80 ${pos} ${border}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: [0, 1, 0.6, 1] }}
+                  transition={{ duration: 1.2, delay: i * 0.1, repeat: Infinity }}
+                />
+              ))}
 
-        {/* ── REVEAL phase — clear photo, tasks list up from bottom ── */}
-        {phase === 'revealing' && tasks && (
-          <motion.div
-            key="reveal"
-            className="flex-1 relative overflow-hidden"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4 }}
-          >
-            <img src={imagePreview} alt="" className="absolute inset-0 w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-black/30" />
-            <div className="absolute top-0 left-0 right-0 px-5 pt-10 flex items-center gap-2">
-              <PoppleCharacter expression="waiting" pendingCount={0} onClick={() => {}} size={32} mode="idle" silent />
-              <p className="font-space-mono text-white text-xs">found {tasks.length} things…</p>
-            </div>
-            <div className="absolute inset-0 overflow-y-auto px-5 pt-24 pb-8 space-y-2">
-              <AnimatePresence>
-                {tasks.slice(0, revealedCount).map((task, i) => {
-                  const diff = DIFF[task.difficulty_guess] ?? DIFF.easy;
-                  return (
-                    <motion.div
-                      key={task.id}
-                      initial={{ opacity: 0, y: 20, scale: 0.96 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      transition={{ type: 'spring', damping: 22, stiffness: 260 }}
-                      className="bg-white/95 rounded-2xl px-4 py-3 flex items-start gap-3 shadow-lg"
-                    >
-                      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-gray-900 text-white flex items-center justify-center font-space-mono text-[9px] mt-0.5">
-                        {i + 1}
+              <div className="absolute bottom-0 left-0 right-0 px-6 pb-12 flex flex-col items-center gap-3">
+                <PoppleCharacter expression="waiting" pendingCount={0} onClick={() => {}} size={56} mode="idle" silent />
+                <motion.p
+                  className="font-space-mono text-white text-xs tracking-widest uppercase"
+                  animate={{ opacity: [0.4, 1, 0.4] }}
+                  transition={{ duration: 1.4, repeat: Infinity }}
+                >
+                  scanning…
+                </motion.p>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── REVIEW phase — full photo, overlaid card ── */}
+          {phase === 'reviewing' && tasks && (
+            <motion.div
+              key="review"
+              className="absolute inset-0 overflow-hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.35 }}
+            >
+              {/* Full-screen photo always visible */}
+              <img src={imagePreview} alt="" className="absolute inset-0 w-full h-full object-cover" />
+              {/* Subtle dark vignette for readability */}
+              <div className="absolute inset-0 bg-black/20" />
+
+              {current < tasks.length ? (() => {
+                const task = tasks[current];
+                const diff = DIFF[task.difficulty_guess] ?? DIFF.easy;
+                const region = task.region;
+                // Card goes bottom if region is in top half, top if region is in bottom half
+                const regionCenter = region ? region.y + region.h / 2 : 0.4;
+                const cardAtBottom = regionCenter < 0.55;
+
+                return (
+                  <>
+                    {/* Top bar */}
+                    <div className="absolute top-0 left-0 right-0 px-4 pt-10 flex items-center justify-between z-10">
+                      <div className="flex items-center gap-2">
+                        <PoppleCharacter expression="idle" pendingCount={0} onClick={() => {}} size={28} mode="idle" silent />
+                        <p className="font-space-mono text-white text-[10px] drop-shadow">{tasks.length - current} left</p>
                       </div>
-                      <div className="flex-1 min-w-0 space-y-1">
-                        <span className={`font-space-mono text-[9px] px-1.5 py-0.5 rounded-full ${diff.pill}`}>{diff.label}</span>
-                        <p className="font-pixel text-sm text-gray-900 leading-snug">{task.title}</p>
+                      <div className="flex items-center gap-3">
+                        {/* Progress dots */}
+                        <div className="flex gap-1">
+                          {tasks.map((_, i) => (
+                            <div key={i} className={`h-1 rounded-full transition-all duration-300 ${
+                              i < current ? 'bg-white/30 w-2' : i === current ? 'bg-white w-4' : 'bg-white/20 w-2'
+                            }`} />
+                          ))}
+                        </div>
+                        <button onClick={onDone} className="font-space-mono text-[10px] text-white/70 border border-white/30 rounded-lg px-3 py-1 backdrop-blur-sm">
+                          skip all
+                        </button>
                       </div>
-                    </motion.div>
-                  );
-                })}
-              </AnimatePresence>
-              {revealedCount < tasks.length && (
-                <div className="flex gap-1.5 px-2 pt-1">
-                  {[0,1,2].map(i => (
-                    <motion.div key={i} className="w-1.5 h-1.5 rounded-full bg-white/60"
-                      animate={{ scale: [1, 1.5, 1], opacity: [0.4, 1, 0.4] }}
-                      transition={{ duration: 0.6, delay: i * 0.15, repeat: Infinity }}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-
-        {/* ── REVIEW phase — clear photo top 55%, region highlight, card bottom ── */}
-        {phase === 'reviewing' && tasks && (
-          <motion.div
-            key="review"
-            className="flex-1 relative overflow-hidden bg-black"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.35 }}
-          >
-            {current < tasks.length ? (() => {
-              const task = tasks[current];
-              const diff = DIFF[task.difficulty_guess] ?? DIFF.easy;
-              const region = task.region;
-              return (
-                <>
-                  {/* Photo — top 55% */}
-                  <div className="absolute top-0 left-0 right-0" style={{ height: '55%' }}>
-                    <img src={imagePreview} alt="" className="w-full h-full object-cover" />
-                    {/* Dark gradient at bottom of photo into card area */}
-                    <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/60 to-transparent" />
+                    </div>
 
                     {/* Region highlight */}
                     <AnimatePresence mode="wait">
                       {region && (
                         <motion.div
-                          key={current}
-                          initial={{ opacity: 0, scale: 1.1 }}
+                          key={`region-${current}`}
+                          initial={{ opacity: 0, scale: 1.08 }}
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0 }}
                           transition={{ duration: 0.3 }}
@@ -218,89 +170,66 @@ export default function PhotoScanFlow({ imagePreview, tasks, onAccept, onDecline
                             height: `${region.h * 100}%`,
                           }}
                         >
-                          {/* Glowing border */}
-                          <div className="absolute inset-0 rounded-xl border-2 border-white shadow-[0_0_0_2px_rgba(255,255,255,0.3),0_0_12px_4px_rgba(255,255,255,0.25)]" />
-                          {/* Animated corner dots */}
+                          <div className="absolute inset-0 rounded-xl border-2 border-white shadow-[0_0_0_2px_rgba(255,255,255,0.25),0_0_16px_6px_rgba(255,255,255,0.2)]" />
                           {['-top-1 -left-1', '-top-1 -right-1', '-bottom-1 -left-1', '-bottom-1 -right-1'].map((pos, i) => (
                             <motion.div
                               key={i}
                               className={`absolute w-2 h-2 rounded-full bg-white ${pos}`}
-                              animate={{ opacity: [1, 0.4, 1] }}
-                              transition={{ duration: 1.2, delay: i * 0.15, repeat: Infinity }}
+                              animate={{ opacity: [1, 0.3, 1] }}
+                              transition={{ duration: 1.4, delay: i * 0.2, repeat: Infinity }}
                             />
                           ))}
                         </motion.div>
                       )}
                     </AnimatePresence>
 
-                    {/* Top bar */}
-                    <div className="absolute top-0 left-0 right-0 px-4 pt-8 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <PoppleCharacter expression="idle" pendingCount={0} onClick={() => {}} size={32} mode="idle" silent />
-                        <p className="font-space-mono text-white text-[10px]">{tasks.length - current} left</p>
-                      </div>
-                      <button onClick={onDone} className="font-space-mono text-[10px] text-white/60 border border-white/25 rounded-lg px-3 py-1">
-                        skip all
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Card — bottom 45% */}
-                  <div className="absolute bottom-0 left-0 right-0 px-4 pb-8 pt-4 flex flex-col gap-4" style={{ top: '55%' }}>
-                    {/* Progress dots */}
-                    <div className="flex gap-1.5 justify-center">
-                      {tasks.map((_, i) => (
-                        <div key={i} className={`h-1 rounded-full transition-all duration-300 ${
-                          i < current ? 'bg-white/30 w-3' : i === current ? 'bg-white w-5' : 'bg-white/15 w-3'
-                        }`} />
-                      ))}
-                    </div>
-
+                    {/* Floating task card — position based on region */}
                     <AnimatePresence mode="wait">
                       <motion.div
-                        key={current}
-                        initial={{ opacity: 0, y: 30 }}
+                        key={`card-${current}`}
+                        initial={{ opacity: 0, y: cardAtBottom ? 24 : -24 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
+                        exit={{ opacity: 0, y: cardAtBottom ? 12 : -12 }}
                         transition={{ type: 'spring', damping: 26, stiffness: 300 }}
-                        className="bg-white rounded-3xl shadow-2xl px-5 py-4 space-y-2"
+                        className="absolute left-4 right-4 z-10"
+                        style={cardAtBottom ? { bottom: 32 } : { top: 88 }}
                       >
-                        <span className={`font-space-mono text-[9px] px-2 py-0.5 rounded-full ${diff.pill}`}>{diff.label}</span>
-                        <p className="font-pixel text-xl text-gray-900 leading-snug">{task.title}</p>
-                        <p className="font-space-mono text-xs text-gray-400 leading-relaxed">{task.coach_note}</p>
+                        <div className="bg-black/70 backdrop-blur-md rounded-3xl px-5 py-4 space-y-2 border border-white/10">
+                          <span className={`font-space-mono text-[9px] px-2 py-0.5 rounded-full ${diff.pill}`}>{diff.label}</span>
+                          <p className="font-pixel text-lg text-white leading-snug">{task.title}</p>
+                          <p className="font-space-mono text-[11px] text-white/60 leading-relaxed">{task.coach_note}</p>
+                          <div className="flex gap-3 pt-1">
+                            <motion.button onClick={handleDecline} whileTap={{ scale: 0.88 }}
+                              className="flex-1 h-11 rounded-2xl bg-white/10 border border-white/20 font-space-mono text-xs text-white/80">
+                              skip ✕
+                            </motion.button>
+                            <motion.button onClick={handleAccept} whileTap={{ scale: 0.88 }}
+                              className="flex-1 h-11 rounded-2xl bg-white font-space-mono text-xs text-gray-900 font-bold shadow-lg">
+                              add it ✓
+                            </motion.button>
+                          </div>
+                        </div>
                       </motion.div>
                     </AnimatePresence>
+                  </>
+                );
+              })() : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 px-6 bg-gray-950/95">
+                  <PoppleCharacter expression="celebrating" pendingCount={0} onClick={() => {}} size={80} mode="idle" silent />
+                  <p className="font-pixel text-white text-lg text-center">
+                    {accepted === 0 ? "nothing added — that's okay" : `${accepted} task${accepted > 1 ? 's' : ''} added!`}
+                  </p>
+                  <motion.button onClick={onDone} whileTap={{ scale: 0.95 }}
+                    className="font-pixel text-xs text-gray-900 bg-white rounded-2xl px-8 py-3 shadow-lg">
+                    back to chat
+                  </motion.button>
+                </div>
+              )}
+            </motion.div>
+          )}
 
-                    <div className="flex justify-center gap-8">
-                      <motion.button onClick={handleDecline} whileTap={{ scale: 0.88 }}
-                        className="w-14 h-14 rounded-full bg-white/15 border border-white/30 flex items-center justify-center text-xl text-white">
-                        ✕
-                      </motion.button>
-                      <motion.button onClick={handleAccept} whileTap={{ scale: 0.88 }}
-                        className="w-14 h-14 rounded-full bg-white flex items-center justify-center text-xl text-gray-900 shadow-lg">
-                        ✓
-                      </motion.button>
-                    </div>
-                  </div>
-                </>
-              );
-            })() : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 px-6 bg-gray-950">
-                <PoppleCharacter expression="celebrating" pendingCount={0} onClick={() => {}} size={80} mode="idle" silent />
-                <p className="font-pixel text-white text-lg text-center">
-                  {accepted === 0 ? "nothing added — that's okay" : `${accepted} task${accepted > 1 ? 's' : ''} added!`}
-                </p>
-                <motion.button onClick={onDone} whileTap={{ scale: 0.95 }}
-                  className="font-pixel text-xs text-gray-900 bg-white rounded-2xl px-8 py-3 shadow-lg">
-                  back to chat
-                </motion.button>
-              </div>
-            )}
-          </motion.div>
-        )}
-
-      </AnimatePresence>
-    </div>
+        </AnimatePresence>
+      </div>
     </motion.div>
   );
 }
