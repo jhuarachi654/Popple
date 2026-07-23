@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'motion/react';
 import { createPortal } from 'react-dom';
 import PoppleCharacter from './PoppleCharacter';
-import CameraCapture from './CameraCapture';
 import { Camera, Image, ArrowElbowDownLeft, Microphone, ArrowRight, Check } from '@phosphor-icons/react';
 import type { ExtractedTask } from './TaskSwipeDeck';
 import type { PoppleAccessory } from './PoppleCharacter';
@@ -266,15 +265,18 @@ export default function PoppleChat({ onAddTodo, onClose, initialMessage }: Props
   const [isProcessing, setIsProcessing] = useState(false);
   const [liveTranscript, setLiveTranscript] = useState('');
   const [memory, setMemory] = useState(() => loadMemory());
-  const [cameraOpen, setCameraOpen] = useState(false);
+
   const [activeScan, setActiveScan] = useState<ActiveScan | null>(null);
 
   const accessory = useMemo(() => {
     try { return (localStorage.getItem('popple-accessory') as PoppleAccessory) ?? null; } catch { return null; }
   }, []);
 
+  const [showPhotoMenu, setShowPhotoMenu] = useState(false);
+
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const hasSpeechAPI = typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
 
@@ -508,14 +510,34 @@ export default function PoppleChat({ onAddTodo, onClose, initialMessage }: Props
           ) : (
             <motion.div key="input" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.97 }}
               className="flex items-center gap-2 bg-gray-900 rounded-2xl px-3 py-2">
-              <motion.button whileTap={{ scale: 0.85 }} onClick={() => setCameraOpen(true)}
-                className="flex-shrink-0 w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-white">
-                <Camera size={18} />
-              </motion.button>
-              <motion.button whileTap={{ scale: 0.85 }} onClick={() => photoInputRef.current?.click()}
-                className="flex-shrink-0 w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-white">
-                <Image size={18} />
-              </motion.button>
+              <div className="relative flex-shrink-0">
+                <motion.button whileTap={{ scale: 0.85 }} onClick={() => setShowPhotoMenu(v => !v)}
+                  className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-white">
+                  <Camera size={18} />
+                </motion.button>
+                <AnimatePresence>
+                  {showPhotoMenu && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setShowPhotoMenu(false)} />
+                      <motion.div
+                        initial={{ opacity: 0, y: 4, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 4, scale: 0.95 }}
+                        className="absolute bottom-full mb-2 left-0 z-20 bg-gray-900 border border-white/10 rounded-2xl overflow-hidden shadow-xl"
+                        style={{ minWidth: 120 }}
+                      >
+                        <button onClick={() => { setShowPhotoMenu(false); cameraInputRef.current?.click(); }}
+                          className="w-full flex items-center gap-2 px-3 py-2.5 font-space-mono text-[11px] text-white/80 hover:text-white hover:bg-white/10 transition-colors">
+                          <Camera size={14} /> Camera
+                        </button>
+                        <div className="h-px bg-white/10" />
+                        <button onClick={() => { setShowPhotoMenu(false); photoInputRef.current?.click(); }}
+                          className="w-full flex items-center gap-2 px-3 py-2.5 font-space-mono text-[11px] text-white/80 hover:text-white hover:bg-white/10 transition-colors">
+                          <Image size={14} /> Gallery
+                        </button>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
               <input
                 value={inputText}
                 onChange={e => setInputText(e.target.value)}
@@ -541,17 +563,9 @@ export default function PoppleChat({ onAddTodo, onClose, initialMessage }: Props
         </AnimatePresence>
       </div>
 
-      <input ref={photoInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoChange} />
+      <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoChange} />
 
-      {cameraOpen && createPortal(
-        <AnimatePresence>
-          <CameraCapture
-            onCapture={(dataUrl, base64, mimeType) => { setCameraOpen(false); startScan(dataUrl, base64, mimeType); }}
-            onClose={() => setCameraOpen(false)}
-          />
-        </AnimatePresence>,
-        document.body
-      )}
     </motion.div>
   );
 }

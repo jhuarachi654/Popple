@@ -18,6 +18,7 @@ interface BackgroundTheme {
 }
 
 interface GameScreenProps {
+  isGuestMode?: boolean;
   completedTodos: Todo[];
   onRemovePill: (id: string) => void;
   onRemoveMultiplePills: (ids: string[]) => void;
@@ -69,6 +70,7 @@ const BENCH_WIDTH        = 60;
 const BENCH_TOP_Y        = 41;   // bench seat height above ground (SVG leg height + 5px lift)
 
 export default function GameScreen({
+  isGuestMode = false,
   completedTodos,
   onRemovePill,
   onRemoveMultiplePills,
@@ -579,6 +581,7 @@ export default function GameScreen({
                 bottom: `calc(5rem + env(safe-area-inset-bottom) + ${Math.round(creature.y)}px - ${CREATURE_H - CREATURE_FOOT}px)`,
                 cursor: creature.isDragging ? 'grabbing' : 'grab',
                 zIndex: 9999,
+                touchAction: 'none',
               }}
               onPointerDown={e => handleCreaturePointerDown(e, creature.id)}
             >
@@ -623,7 +626,7 @@ export default function GameScreen({
       <AnimatePresence>
         {showPopup && (
           <PopupWorld
-            completedTodos={completedTodos}
+            completedTodos={isGuestMode ? completedTodos.slice(0, 3) : completedTodos}
             onRemovePill={onRemovePill}
             onRemoveMultiplePills={onRemoveMultiplePills}
             gameSettings={gameSettings}
