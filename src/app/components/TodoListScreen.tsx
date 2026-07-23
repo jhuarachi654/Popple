@@ -153,8 +153,8 @@ const TodoItem: React.FC<TodoItemProps> = ({
               <button
                 ref={dateButtonRef}
                 onClick={openPicker}
-                style={{ lineHeight: 1, paddingTop: 2, paddingBottom: 2 }}
-                className={`flex-shrink-0 font-space-mono text-[10px] px-2 rounded-md border transition-all ${
+                style={{ lineHeight: 1, paddingTop: 2, paddingBottom: 2, WebkitAppearance: 'none', appearance: 'none' }}
+                className={`flex-shrink-0 font-space-mono text-[10px] px-2 rounded-md border transition-all inline-flex items-center ${
                   todo.dueDate ? '' : 'opacity-0 group-hover/task:opacity-100'
                 } ${
                   todo.dueDate
@@ -535,9 +535,11 @@ export default function TodoListScreen({
                             placeholder="add a task…"
                             className="flex-1 bg-transparent text-gray-900 placeholder-gray-400 font-space-mono text-sm outline-none"
                             autoFocus
+                            enterKeyHint="done"
                           />
                           <button
-                            onClick={() => {
+                            onPointerDown={e => {
+                              e.preventDefault();
                               if (!newTaskText.trim()) return;
                               onAddTodo(newTaskText.trim(), newTaskDue || undefined);
                               setNewTaskText(''); setNewTaskDue(''); setFabOpen(false); setShowDatePicker(false);
@@ -564,9 +566,9 @@ export default function TodoListScreen({
                             </button>
                           ) : (
                             <>
-                              <button onClick={() => setNewTaskDue(todayStr)} className="font-space-mono text-[10px] text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 border border-gray-200 hover:border-cyan-300 px-2 py-0.5 rounded-md transition-all">today</button>
-                              <button onClick={() => { const d = new Date(now); d.setDate(d.getDate() + 1); setNewTaskDue(d.toISOString().split('T')[0]); }} className="font-space-mono text-[10px] text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 border border-gray-200 hover:border-cyan-300 px-2 py-0.5 rounded-md transition-all">tomorrow</button>
-                              <button onClick={() => { const d = new Date(); setCalMonth({ year: d.getFullYear(), month: d.getMonth() }); setShowDatePicker(p => !p); }} className="font-space-mono text-[10px] text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 border border-gray-200 hover:border-cyan-300 px-2 py-0.5 rounded-md transition-all">pick date</button>
+                              <button onClick={() => setNewTaskDue(todayStr)} style={{ WebkitAppearance: 'none', appearance: 'none', paddingTop: 3, paddingBottom: 3 }} className="font-space-mono text-[10px] text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 border border-gray-200 hover:border-cyan-300 px-2 rounded-md transition-all inline-flex items-center">today</button>
+                              <button onClick={() => { const d = new Date(now); d.setDate(d.getDate() + 1); setNewTaskDue(d.toISOString().split('T')[0]); }} style={{ WebkitAppearance: 'none', appearance: 'none', paddingTop: 3, paddingBottom: 3 }} className="font-space-mono text-[10px] text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 border border-gray-200 hover:border-cyan-300 px-2 rounded-md transition-all inline-flex items-center">tomorrow</button>
+                              <button onClick={() => { const d = new Date(); setCalMonth({ year: d.getFullYear(), month: d.getMonth() }); setShowDatePicker(p => !p); }} style={{ WebkitAppearance: 'none', appearance: 'none', paddingTop: 3, paddingBottom: 3 }} className="font-space-mono text-[10px] text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 border border-gray-200 hover:border-cyan-300 px-2 rounded-md transition-all inline-flex items-center">pick date</button>
                             </>
                           )}
                         </div>
