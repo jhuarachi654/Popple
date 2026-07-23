@@ -269,7 +269,7 @@ export default function PoppleChat({ onAddTodo, onClose, initialMessage }: Props
   const [activeScan, setActiveScan] = useState<ActiveScan | null>(null);
 
   const accessory = useMemo(() => {
-    try { return (localStorage.getItem('popple-accessory') as PoppleAccessory) ?? null; } catch { return null; }
+    try { return (localStorage.getItem('popple-accessory') as PoppleAccessory) ?? 'flower'; } catch { return 'flower'; }
   }, []);
 
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);

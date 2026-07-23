@@ -98,7 +98,7 @@ export default function GameScreen({
 
   // Accessory — persisted to localStorage
   const [equippedAcc, setEquippedAcc] = useState<PoppleAccessory>(() => {
-    try { return (localStorage.getItem('popple-accessory') as PoppleAccessory) ?? null; }
+    try { return (localStorage.getItem('popple-accessory') as PoppleAccessory) ?? 'flower'; }
     catch { return null; }
   });
 

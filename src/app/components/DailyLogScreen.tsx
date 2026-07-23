@@ -17,7 +17,7 @@ const TYPE_PATTERNS: { type: string; label: string; keywords: string[] }[] = [
   { type: 'admin',   label: 'admin tasks',            keywords: ['pay', 'bill', 'invoice', 'form', 'file', 'submit', 'renew', 'schedule', 'book', 'appoint', 'register'] },
   { type: 'errand',  label: 'errands',                keywords: ['buy', 'pick up', 'get', 'grab', 'shop', 'store', 'groceries', 'pharmacy', 'drop off'] },
   { type: 'creative',label: 'creative tasks',         keywords: ['write', 'design', 'draft', 'draw', 'sketch', 'create', 'build', 'make', 'edit', 'record'] },
-  { type: 'research',label: 'research tasks',         keywords: ['research', 'look up', 'find', 'read', 'review', 'check', 'look into', 'explore'] },
+  { type: 'home',    label: 'home tasks',              keywords: ['clean', 'fix', 'repair', 'laundry', 'dishes', 'vacuum', 'organize', 'tidy', 'trash', 'yard', 'garden', 'cook', 'meal', 'grocery', 'home', 'house', 'apartment'] },
 ];
 
 function classifyType(text: string): string | null {

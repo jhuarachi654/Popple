@@ -153,8 +153,9 @@ const TodoItem: React.FC<TodoItemProps> = ({
               <button
                 ref={dateButtonRef}
                 onClick={openPicker}
-                className={`flex-shrink-0 font-space-mono text-[10px] px-2 rounded-md border transition-all leading-none ${
-                  todo.dueDate ? 'py-[2px]' : 'py-[2px] opacity-0 group-hover/task:opacity-100'
+                style={{ lineHeight: 1, paddingTop: 2, paddingBottom: 2 }}
+                className={`flex-shrink-0 font-space-mono text-[10px] px-2 rounded-md border transition-all ${
+                  todo.dueDate ? '' : 'opacity-0 group-hover/task:opacity-100'
                 } ${
                   todo.dueDate
                     ? badge?.neutral
@@ -305,7 +306,7 @@ export default function TodoListScreen({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState('');
   const accessory = useMemo(() => {
-    try { return (localStorage.getItem('popple-accessory') as PoppleAccessory) ?? null; } catch { return null; }
+    try { return (localStorage.getItem('popple-accessory') as PoppleAccessory) ?? 'flower'; } catch { return 'flower'; }
   }, []);
   const [chatOpen, setChatOpen] = useState(false);
   const [somedayOpen, setSomedayOpen] = useState(false);
@@ -535,15 +536,18 @@ export default function TodoListScreen({
                             className="flex-1 bg-transparent text-gray-900 placeholder-gray-400 font-space-mono text-sm outline-none"
                             autoFocus
                           />
-                          {newTaskText.trim() && (
-                            <button
-                              onClick={() => {
-                                onAddTodo(newTaskText.trim(), newTaskDue || undefined);
-                                setNewTaskText(''); setNewTaskDue(''); setFabOpen(false); setShowDatePicker(false);
-                              }}
-                              className="text-gray-400 hover:text-gray-900 transition-colors font-space-mono text-xs"
-                            >↵</button>
-                          )}
+                          <button
+                            onClick={() => {
+                              if (!newTaskText.trim()) return;
+                              onAddTodo(newTaskText.trim(), newTaskDue || undefined);
+                              setNewTaskText(''); setNewTaskDue(''); setFabOpen(false); setShowDatePicker(false);
+                            }}
+                            className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                              newTaskText.trim() ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-300'
+                            }`}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          </button>
                         </div>
                         <div className="flex items-center gap-1.5 flex-wrap">
                           {newTaskDue ? (
