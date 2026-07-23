@@ -273,7 +273,7 @@ export default function PoppleChat({ onAddTodo, onClose }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const hasSpeechAPI = typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
 
-  const scrollToBottom = () => setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 60);
+  const scrollToBottom = () => { setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 60); };
   useEffect(scrollToBottom, [messages]);
 
   const handleAddTodo = useCallback((title: string) => {

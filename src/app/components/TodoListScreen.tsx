@@ -1,13 +1,12 @@
 import React, { useState, useRef, useEffect, useMemo, Component } from 'react';
 
-class ChatErrorBoundary extends Component<{ children: React.ReactNode }, { error: string | null; stack: string | null }> {
-  constructor(props: { children: React.ReactNode }) { super(props); this.state = { error: null, stack: null }; }
-  static getDerivedStateFromError(e: Error) { return { error: e.message, stack: e.stack ?? null }; }
-  componentDidCatch(e: Error, info: React.ErrorInfo) { console.error('[ChatErrorBoundary]', e, info.componentStack); }
+class ChatErrorBoundary extends Component<{ children: React.ReactNode }, { error: string | null }> {
+  constructor(props: { children: React.ReactNode }) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(e: Error) { return { error: e.message }; }
   render() {
     if (this.state.error) return (
-      <div className="fixed inset-0 z-[10002] bg-white overflow-auto p-6">
-        <p className="font-space-mono text-xs text-red-500 whitespace-pre-wrap break-all">{this.state.error}{'\n\n'}{this.state.stack}</p>
+      <div className="fixed inset-0 z-[10002] bg-white flex items-center justify-center p-8">
+        <p className="font-space-mono text-sm text-red-500 text-center">{this.state.error}</p>
       </div>
     );
     return this.props.children;
