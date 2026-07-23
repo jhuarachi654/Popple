@@ -133,11 +133,11 @@ function ChatBubble({ msg, onAddTodo, onUseSample, accessory }: { msg: ChatMessa
 
   if (msg.isTyping) {
     return (
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-3">
         <div className="flex-shrink-0 mt-0.5">
-          <PoppleCharacter expression="waiting" pendingCount={0} onClick={() => {}} size={44} mode="idle" silent accessory={accessory} />
+          <PoppleCharacter expression="waiting" pendingCount={0} onClick={() => {}} size={56} mode="idle" silent accessory={accessory} />
         </div>
-        <div className="flex gap-1 bg-gray-100 rounded-2xl rounded-tl-sm px-4 py-3 mt-0.5">
+        <div className="flex gap-1 pt-4">
           {[0, 1, 2].map(i => (
             <motion.div key={i} className="w-1.5 h-1.5 rounded-full bg-gray-400"
               animate={{ y: [0, -4, 0] }}
@@ -172,7 +172,7 @@ function ChatBubble({ msg, onAddTodo, onUseSample, accessory }: { msg: ChatMessa
     return (
       <div className="flex flex-col items-end gap-1.5">
         {msg.text && (
-          <div className="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-br-sm bg-gray-900 text-white font-space-mono text-sm leading-relaxed">
+          <div className="min-w-[80px] max-w-[80%] px-4 py-2.5 rounded-2xl rounded-br-sm bg-gray-900 text-white font-space-mono text-base leading-relaxed">
             {msg.text}
           </div>
         )}
@@ -187,17 +187,17 @@ function ChatBubble({ msg, onAddTodo, onUseSample, accessory }: { msg: ChatMessa
 
   // Popple message — avatar on the left
   return (
-    <div className="flex items-start gap-2">
+    <div className="flex items-start gap-3">
       {/* Popple avatar */}
       <div className="flex-shrink-0 mt-0.5">
-        <PoppleCharacter expression="idle" pendingCount={0} onClick={() => {}} size={44} mode="idle" silent accessory={accessory} />
+        <PoppleCharacter expression="idle" pendingCount={0} onClick={() => {}} size={56} mode="idle" silent accessory={accessory} />
       </div>
 
       <div className="flex flex-col gap-1.5 flex-1 min-w-0">
         {msg.text && (
-          <div className="max-w-[85%] px-4 py-2.5 rounded-2xl rounded-tl-sm bg-gray-100 text-gray-800 font-space-mono text-sm leading-relaxed">
+          <p className="font-space-mono text-base text-gray-800 leading-relaxed pt-2">
             {msg.text}
-          </div>
+          </p>
         )}
         {msg.tasks && msg.tasks.length > 0 && (
           <div className="w-full space-y-2">
