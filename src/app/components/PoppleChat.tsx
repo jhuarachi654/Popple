@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { createPortal } from 'react-dom';
 import PoppleCharacter from './PoppleCharacter';
+import PhotoScanFlow from './PhotoScanFlow';
 import type { ExtractedTask } from './TaskSwipeDeck';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -158,6 +160,10 @@ export default function PoppleChat({ onAddTodo, onClose }: Props) {
   const [memory, setMemory] = useState(() => loadMemory());
   const [poppleExpression, setPoppleExpression] = useState<'idle' | 'waiting' | 'celebrating'>('idle');
 
+  // Photo scan flow state
+  const [scanImage, setScanImage] = useState<string | null>(null);
+  const [scanTasks, setScanTasks] = useState<ExtractedTask[] | null>(null);
+
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -272,7 +278,24 @@ export default function PoppleChat({ onAddTodo, onClose }: Props) {
     if (isListening) stopListening();
   }, [isListening, stopListening]);
 
-  // ── Photo ─────────────────────────────────────────────────────────────────
+  // ── Photo → scan flow ─────────────────────────────────────────────────────
+
+  const startScan = useCallback(async (dataUrl: string, base64: string, mimeType: string) => {
+    setScanImage(dataUrl);
+    setScanTasks(null);
+    const recentActivity = memory.filter(e => e.outcome === 'accepted').slice(-5).map(e => e.title);
+    try {
+      const res = await fetch(`${API_BASE}/ai/extract-tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64, mimeType, recentActivity }),
+      });
+      const data = await res.json() as { tasks?: ExtractedTask[] };
+      setScanTasks(data.tasks ?? []);
+    } catch {
+      setScanTasks([]);
+    }
+  }, [memory]);
 
   const handlePhotoChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -282,22 +305,14 @@ export default function PoppleChat({ onAddTodo, onClose }: Props) {
       const dataUrl = reader.result as string;
       const [header, base64] = dataUrl.split(',');
       const mimeType = header.match(/:(.*?);/)?.[1] ?? 'image/jpeg';
-      const msgId = `user-${Date.now()}`;
-      setMessages(prev => [...prev, { id: msgId, role: 'user', imagePreview: dataUrl }]);
-      extractAndRespond({ image: base64, mimeType }, msgId);
+      startScan(dataUrl, base64, mimeType);
     };
     reader.readAsDataURL(file);
     e.target.value = '';
-  }, [extractAndRespond]);
-
-  // ── Sample photo ─────────────────────────────────────────────────────────
+  }, [startScan]);
 
   const handleUseSample = useCallback(async () => {
-    const msgId = `user-${Date.now()}`;
-    setMessages(prev => [
-      ...prev.filter(m => !m.isSampleHint),
-      { id: msgId, role: 'user', imagePreview: '/sample-room.webp' },
-    ]);
+    setMessages(prev => prev.filter(m => !m.isSampleHint));
     const res = await fetch('/sample-room.webp');
     const blob = await res.blob();
     const reader = new FileReader();
@@ -305,12 +320,12 @@ export default function PoppleChat({ onAddTodo, onClose }: Props) {
       const dataUrl = reader.result as string;
       const [header, base64] = dataUrl.split(',');
       const mimeType = header.match(/:(.*?);/)?.[1] ?? 'image/webp';
-      extractAndRespond({ image: base64, mimeType }, msgId);
+      startScan(dataUrl, base64, mimeType);
     };
     reader.readAsDataURL(blob);
-  }, [extractAndRespond]);
+  }, [startScan]);
 
-  // ── Handle task adds from cards ───────────────────────────────────────────
+  // ── Handle task adds ──────────────────────────────────────────────────────
 
   const handleAddTodo = useCallback((title: string) => {
     onAddTodo(title);
@@ -320,6 +335,21 @@ export default function PoppleChat({ onAddTodo, onClose }: Props) {
     setPoppleExpression('celebrating');
     setTimeout(() => setPoppleExpression('idle'), 2000);
   }, [onAddTodo, memory]);
+
+  const handleScanAccept = useCallback((task: ExtractedTask) => {
+    handleAddTodo(task.title);
+  }, [handleAddTodo]);
+
+  const handleScanDecline = useCallback((task: ExtractedTask) => {
+    const updated = [...memory, { title: task.title, outcome: 'declined' as const }].slice(-10);
+    setMemory(updated);
+    saveMemory(updated);
+  }, [memory]);
+
+  const handleScanDone = useCallback(() => {
+    setScanImage(null);
+    setScanTasks(null);
+  }, []);
 
   useEffect(() => { return () => { recognitionRef.current?.stop(); }; }, []);
 
@@ -449,6 +479,20 @@ export default function PoppleChat({ onAddTodo, onClose }: Props) {
         className="hidden"
         onChange={handlePhotoChange}
       />
+
+      {/* Photo scan flow — portal so it covers everything */}
+      {scanImage && createPortal(
+        <AnimatePresence>
+          <PhotoScanFlow
+            imagePreview={scanImage}
+            tasks={scanTasks}
+            onAccept={handleScanAccept}
+            onDecline={handleScanDecline}
+            onDone={handleScanDone}
+          />
+        </AnimatePresence>,
+        document.body
+      )}
     </motion.div>
   );
 }
