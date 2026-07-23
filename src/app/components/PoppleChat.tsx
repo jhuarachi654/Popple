@@ -96,39 +96,10 @@ function getConversationalReply(text: string): string | null {
   // Let the AI handle anything else
   return null;
 }
-const DIFF: Record<string, { pill: string; label: string }> = {
-  easy:   { pill: 'bg-emerald-100 text-emerald-700', label: 'quick win'   },
-  medium: { pill: 'bg-amber-100 text-amber-700',     label: 'some effort' },
-  hard:   { pill: 'bg-rose-100 text-rose-700',       label: 'big one'     },
-};
-
-// ── Task card (inline in chat) ────────────────────────────────────────────────
-
-function TaskCard({ task, onAdd }: { task: ExtractedTask; onAdd: () => void }) {
-  const [added, setAdded] = useState(false);
-  const diff = DIFF[task.difficulty_guess] ?? DIFF.easy;
-  return (
-    <div className="pixel-notebook rounded-xl p-3 flex items-start gap-3">
-      <div className="flex-1 min-w-0 space-y-1.5">
-        <span className={`font-space-mono text-[9px] px-1.5 py-0.5 rounded-full ${diff.pill}`}>{diff.label}</span>
-        <p className="font-pixel text-sm text-gray-900 leading-snug">{task.title}</p>
-        <p className="font-space-mono text-[10px] text-gray-400 leading-relaxed">{task.coach_note}</p>
-      </div>
-      <button
-        onClick={() => { if (!added) { onAdd(); setAdded(true); } }}
-        className={`flex-shrink-0 mt-1 font-pixel text-[9px] px-3 py-1.5 rounded-lg transition-colors ${
-          added ? 'bg-gray-100 text-gray-400' : 'bg-gray-900 text-white active:scale-95'
-        }`}
-      >
-        {added ? 'added ✓' : '+ add'}
-      </button>
-    </div>
-  );
-}
 
 // ── Single chat bubble ────────────────────────────────────────────────────────
 
-function ChatBubble({ msg, onAddTodo, onUseSample, accessory }: { msg: ChatMessage; onAddTodo: (title: string) => void; onUseSample?: () => void; accessory: import('./PoppleCharacter').PoppleAccessory }) {
+function ChatBubble({ msg, onUseSample, accessory }: { msg: ChatMessage; onUseSample?: () => void; accessory: import('./PoppleCharacter').PoppleAccessory }) {
   const isUser = msg.role === 'user';
 
   if (msg.isTyping) {
@@ -200,11 +171,13 @@ function ChatBubble({ msg, onAddTodo, onUseSample, accessory }: { msg: ChatMessa
           </p>
         )}
         {msg.tasks && msg.tasks.length > 0 && (
-          <div className="w-full space-y-2">
+          <ul className="space-y-1 pt-1">
             {msg.tasks.map(task => (
-              <TaskCard key={task.id} task={task} onAdd={() => onAddTodo(task.title)} />
+              <li key={task.id} className="font-space-mono text-sm text-gray-500 before:content-['·'] before:mr-2">
+                {task.title}
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </div>
     </div>
@@ -481,7 +454,7 @@ export default function PoppleChat({ onAddTodo, onClose }: Props) {
         className="flex-1 overflow-y-auto px-4 py-4 space-y-4 min-h-0"
       >
         {messages.map(msg => (
-          <ChatBubble key={msg.id} msg={msg} onAddTodo={handleAddTodo} onUseSample={handleUseSample} accessory={accessory} />
+          <ChatBubble key={msg.id} msg={msg} onUseSample={handleUseSample} accessory={accessory} />
         ))}
       </div>
 
