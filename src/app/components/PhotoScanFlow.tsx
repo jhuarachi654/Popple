@@ -128,37 +128,37 @@ export default function PhotoScanFlow({ imagePreview, tasks, onAccept, onDecline
           </motion.div>
         )}
 
-        {/* ── REVEAL phase ── */}
+        {/* ── REVEAL phase — tasks float up over blurred photo ── */}
         {phase === 'revealing' && tasks && (
           <motion.div
             key="reveal"
-            className="flex-1 flex flex-col overflow-hidden"
+            className="flex-1 relative overflow-hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.4 }}
           >
-            {/* Small photo strip at top */}
-            <div className="relative flex-shrink-0" style={{ height: 180 }}>
-              <img src={imagePreview} alt="" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/70" />
-              <div className="absolute bottom-3 left-4 flex items-center gap-2">
-                <PoppleCharacter expression="idle" pendingCount={0} onClick={() => {}} size={32} mode="idle" silent />
-                <p className="font-space-mono text-white text-xs">found {tasks.length} things…</p>
-              </div>
+            {/* Blurred photo background */}
+            <img src={imagePreview} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+
+            {/* Header */}
+            <div className="absolute top-0 left-0 right-0 px-5 pt-10 flex items-center gap-2">
+              <PoppleCharacter expression="waiting" pendingCount={0} onClick={() => {}} size={32} mode="idle" silent />
+              <p className="font-space-mono text-white text-xs tracking-wide">found {tasks.length} things…</p>
             </div>
 
-            {/* Revealed tasks */}
-            <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-2 bg-white">
+            {/* Tasks floating up */}
+            <div className="absolute inset-0 overflow-y-auto px-5 pt-24 pb-8 space-y-3">
               <AnimatePresence>
                 {tasks.slice(0, revealedCount).map((task, i) => {
                   const diff = DIFF[task.difficulty_guess] ?? DIFF.easy;
                   return (
                     <motion.div
                       key={task.id}
-                      initial={{ opacity: 0, y: 16 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ type: 'spring', damping: 22, stiffness: 280 }}
-                      className="pixel-notebook rounded-xl px-4 py-3 flex items-start gap-3"
+                      initial={{ opacity: 0, y: 24, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ type: 'spring', damping: 22, stiffness: 260 }}
+                      className="bg-white/95 backdrop-blur-md rounded-2xl px-4 py-3 flex items-start gap-3 shadow-lg"
                     >
                       <div className="flex-shrink-0 w-5 h-5 rounded-full bg-gray-900 text-white flex items-center justify-center font-space-mono text-[9px] mt-0.5">
                         {i + 1}
@@ -166,128 +166,120 @@ export default function PhotoScanFlow({ imagePreview, tasks, onAccept, onDecline
                       <div className="flex-1 min-w-0 space-y-1">
                         <span className={`font-space-mono text-[9px] px-1.5 py-0.5 rounded-full ${diff.pill}`}>{diff.label}</span>
                         <p className="font-pixel text-sm text-gray-900 leading-snug">{task.title}</p>
-                        <p className="font-space-mono text-[10px] text-gray-400">{task.coach_note}</p>
+                        <p className="font-space-mono text-[10px] text-gray-500">{task.coach_note}</p>
                       </div>
                     </motion.div>
                   );
                 })}
               </AnimatePresence>
 
-              {/* Scanning indicator for remaining */}
               {revealedCount < tasks.length && (
-                <motion.div
-                  className="flex items-center gap-2 px-4 py-3"
-                  animate={{ opacity: [0.3, 1, 0.3] }}
-                  transition={{ duration: 0.9, repeat: Infinity }}
-                >
+                <div className="flex gap-1.5 px-2 pt-1">
                   {[0,1,2].map(i => (
-                    <motion.div key={i} className="w-1.5 h-1.5 rounded-full bg-gray-300"
-                      animate={{ scale: [1, 1.4, 1] }}
-                      transition={{ duration: 0.5, delay: i * 0.12, repeat: Infinity }}
+                    <motion.div key={i} className="w-1.5 h-1.5 rounded-full bg-white/50"
+                      animate={{ scale: [1, 1.5, 1], opacity: [0.4, 1, 0.4] }}
+                      transition={{ duration: 0.6, delay: i * 0.15, repeat: Infinity }}
                     />
                   ))}
-                </motion.div>
+                </div>
               )}
             </div>
           </motion.div>
         )}
 
-        {/* ── REVIEW phase — swipe ── */}
+        {/* ── REVIEW phase — photo as full background, card floats over ── */}
         {phase === 'reviewing' && tasks && (
           <motion.div
             key="review"
-            className="flex-1 flex flex-col"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: 'spring', damping: 28, stiffness: 260 }}
+            className="flex-1 relative overflow-hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.35 }}
           >
-            {/* Photo thumbnail strip */}
-            <div className="relative flex-shrink-0" style={{ height: 140 }}>
-              <img src={imagePreview} alt="" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-black/50" />
-              <div className="absolute inset-0 flex items-center justify-between px-5">
-                <div className="flex items-center gap-2">
-                  <PoppleCharacter expression="idle" pendingCount={0} onClick={() => {}} size={40} mode="idle" silent />
-                  <div>
-                    <p className="font-pixel text-white text-xs">ready to review</p>
-                    <p className="font-space-mono text-white/50 text-[9px]">{tasks.length - current} left</p>
-                  </div>
-                </div>
-                <button
-                  onClick={onDone}
-                  className="font-space-mono text-[10px] text-white/50 border border-white/20 rounded-lg px-3 py-1.5"
-                >
-                  skip all
-                </button>
-              </div>
-            </div>
+            {/* Full blurred photo background */}
+            <img src={imagePreview} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-black/55 backdrop-blur-sm" />
 
-            {/* Current task card */}
             {current < tasks.length ? (
-              <div className="flex-1 flex flex-col px-5 pt-6 pb-8 bg-white">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={current}
-                    initial={{ opacity: 0, x: 60 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -60 }}
-                    transition={{ type: 'spring', damping: 26, stiffness: 300 }}
-                    className="pixel-notebook rounded-2xl shadow-lg p-5 flex flex-col justify-between"
-                  >
-                    <div className="space-y-3">
-                      {/* Progress dots */}
-                      <div className="flex gap-1.5 mb-2">
-                        {tasks.map((_, i) => (
-                          <div key={i} className={`h-1 rounded-full transition-all duration-300 ${
-                            i < current ? 'bg-gray-200 w-3' : i === current ? 'bg-gray-900 w-5' : 'bg-gray-100 w-3'
-                          }`} />
-                        ))}
-                      </div>
-                      {(() => {
-                        const task = tasks[current];
-                        const diff = DIFF[task.difficulty_guess] ?? DIFF.easy;
-                        return (
-                          <>
-                            <span className={`font-space-mono text-[9px] px-2 py-0.5 rounded-full ${diff.pill}`}>{diff.label}</span>
-                            <p className="font-pixel text-xl text-gray-900 leading-snug">{task.title}</p>
-                            <p className="font-space-mono text-xs text-gray-400 leading-relaxed">{task.coach_note}</p>
-                          </>
-                        );
-                      })()}
-                    </div>
+              <div className="absolute inset-0 flex flex-col justify-between px-5 pt-10 pb-10">
 
-                    <p className="font-space-mono text-[9px] text-gray-300 text-center mt-4">
-                      accept or skip?
-                    </p>
-                  </motion.div>
+                {/* Top bar */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <PoppleCharacter expression="idle" pendingCount={0} onClick={() => {}} size={36} mode="idle" silent />
+                    <div>
+                      <p className="font-pixel text-white text-xs">review tasks</p>
+                      <p className="font-space-mono text-white/50 text-[9px]">{tasks.length - current} left</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={onDone}
+                    className="font-space-mono text-[10px] text-white/50 border border-white/20 rounded-lg px-3 py-1.5"
+                  >
+                    skip all
+                  </button>
+                </div>
+
+                {/* Progress dots */}
+                <div className="flex gap-1.5 justify-center">
+                  {tasks.map((_, i) => (
+                    <div key={i} className={`h-1 rounded-full transition-all duration-300 ${
+                      i < current ? 'bg-white/30 w-3' : i === current ? 'bg-white w-5' : 'bg-white/15 w-3'
+                    }`} />
+                  ))}
+                </div>
+
+                {/* Floating task card */}
+                <AnimatePresence mode="wait">
+                  {(() => {
+                    const task = tasks[current];
+                    const diff = DIFF[task.difficulty_guess] ?? DIFF.easy;
+                    return (
+                      <motion.div
+                        key={current}
+                        initial={{ opacity: 0, y: 40, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -30, scale: 0.95 }}
+                        transition={{ type: 'spring', damping: 26, stiffness: 300 }}
+                        className="bg-white rounded-3xl shadow-2xl p-6 space-y-3"
+                      >
+                        <span className={`font-space-mono text-[9px] px-2 py-0.5 rounded-full ${diff.pill}`}>{diff.label}</span>
+                        <p className="font-pixel text-2xl text-gray-900 leading-snug">{task.title}</p>
+                        <p className="font-space-mono text-xs text-gray-400 leading-relaxed">{task.coach_note}</p>
+                      </motion.div>
+                    );
+                  })()}
                 </AnimatePresence>
 
-                {/* Buttons */}
-                <div className="flex justify-center gap-8 mt-5">
+                {/* Accept / Decline buttons */}
+                <div className="flex justify-center gap-8">
                   <motion.button
                     onClick={handleDecline}
                     whileTap={{ scale: 0.88 }}
-                    className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center text-xl text-gray-500"
+                    className="w-16 h-16 rounded-full bg-white/15 border border-white/30 flex items-center justify-center text-2xl text-white backdrop-blur-sm"
                   >
                     ✕
                   </motion.button>
                   <motion.button
                     onClick={handleAccept}
                     whileTap={{ scale: 0.88 }}
-                    className="w-14 h-14 rounded-full bg-gray-900 text-white flex items-center justify-center text-xl"
+                    className="w-16 h-16 rounded-full bg-white flex items-center justify-center text-2xl text-gray-900 shadow-lg"
                   >
                     ✓
                   </motion.button>
                 </div>
               </div>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center gap-4 bg-white px-6">
+              /* Done state — still photo background */
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 px-6">
                 <PoppleCharacter expression="celebrating" pendingCount={0} onClick={() => {}} size={80} mode="idle" silent />
-                <p className="font-pixel text-gray-900 text-base">{accepted === 0 ? 'nothing added — that\'s okay' : `${accepted} task${accepted > 1 ? 's' : ''} added!`}</p>
+                <p className="font-pixel text-white text-lg text-center">
+                  {accepted === 0 ? 'nothing added — that\'s okay' : `${accepted} task${accepted > 1 ? 's' : ''} added!`}
+                </p>
                 <motion.button
                   onClick={onDone}
                   whileTap={{ scale: 0.95 }}
-                  className="font-pixel text-xs text-white bg-gray-900 rounded-2xl px-8 py-3"
+                  className="font-pixel text-xs text-gray-900 bg-white rounded-2xl px-8 py-3 shadow-lg"
                 >
                   back to chat
                 </motion.button>
