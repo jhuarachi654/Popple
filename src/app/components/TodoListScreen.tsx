@@ -1,4 +1,17 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, Component } from 'react';
+
+class ChatErrorBoundary extends Component<{ children: React.ReactNode }, { error: string | null }> {
+  constructor(props: { children: React.ReactNode }) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(e: Error) { return { error: e.message }; }
+  render() {
+    if (this.state.error) return (
+      <div className="fixed inset-0 z-[10002] bg-white flex items-center justify-center p-8">
+        <p className="font-space-mono text-sm text-red-500 text-center">{this.state.error}</p>
+      </div>
+    );
+    return this.props.children;
+  }
+}
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -908,10 +921,12 @@ export default function TodoListScreen({
       {createPortal(
         <AnimatePresence>
           {chatOpen && (
-            <PoppleChat
-              onAddTodo={onAddTodo}
-              onClose={() => setChatOpen(false)}
-            />
+            <ChatErrorBoundary>
+              <PoppleChat
+                onAddTodo={onAddTodo}
+                onClose={() => setChatOpen(false)}
+              />
+            </ChatErrorBoundary>
           )}
         </AnimatePresence>,
         document.body
