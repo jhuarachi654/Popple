@@ -92,7 +92,7 @@ function ChatBubble({ msg, onAddTodo, onUseSample }: { msg: ChatMessage; onAddTo
             whileTap={{ scale: 0.97 }}
             onClick={onUseSample}
             className="overflow-hidden rounded-2xl border-2 border-gray-200 shadow-md active:scale-95 transition-transform"
-            style={{ width: 220, height: 160 }}
+            style={{ width: 140, height: 100 }}
           >
             <img src="/sample-room.webp" alt="sample room" className="w-full h-full object-cover" />
           </motion.button>
@@ -110,8 +110,8 @@ function ChatBubble({ msg, onAddTodo, onUseSample }: { msg: ChatMessage; onAddTo
           </div>
         )}
         {msg.imagePreview && (
-          <div className="max-w-[60%] rounded-2xl overflow-hidden border border-gray-200">
-            <img src={msg.imagePreview} alt="attached" className="w-full object-cover" />
+          <div className="rounded-xl overflow-hidden border border-gray-200" style={{ width: 140, height: 100 }}>
+            <img src={msg.imagePreview} alt="attached" className="w-full h-full object-cover" />
           </div>
         )}
       </div>
