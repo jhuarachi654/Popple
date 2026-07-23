@@ -67,7 +67,7 @@ function TaskCard({ task, onAdd }: { task: ExtractedTask; onAdd: () => void }) {
 
 // ── Single chat bubble ────────────────────────────────────────────────────────
 
-function ChatBubble({ msg, onAddTodo, onUseSample }: { msg: ChatMessage; onAddTodo: (title: string) => void; onUseSample?: () => void }) {
+function ChatBubble({ msg, onAddTodo, onUseSample, accessory }: { msg: ChatMessage; onAddTodo: (title: string) => void; onUseSample?: () => void; accessory: import('./PoppleCharacter').PoppleAccessory }) {
   const isUser = msg.role === 'user';
 
   if (msg.isTyping) {
@@ -408,7 +408,7 @@ export default function PoppleChat({ onAddTodo, onClose }: Props) {
         className="flex-1 overflow-y-auto px-4 py-4 space-y-4 min-h-0"
       >
         {messages.map(msg => (
-          <ChatBubble key={msg.id} msg={msg} onAddTodo={handleAddTodo} onUseSample={handleUseSample} />
+          <ChatBubble key={msg.id} msg={msg} onAddTodo={handleAddTodo} onUseSample={handleUseSample} accessory={accessory} />
         ))}
       </div>
 
