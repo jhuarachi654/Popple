@@ -74,7 +74,7 @@ function ChatBubble({ msg, onAddTodo, onUseSample }: { msg: ChatMessage; onAddTo
     return (
       <div className="flex items-start gap-2">
         <div className="flex-shrink-0 mt-0.5">
-          <PoppleCharacter expression="waiting" pendingCount={0} onClick={() => {}} size={32} mode="idle" silent accessory={accessory} />
+          <PoppleCharacter expression="waiting" pendingCount={0} onClick={() => {}} size={44} mode="idle" silent accessory={accessory} />
         </div>
         <div className="flex gap-1 bg-gray-100 rounded-2xl rounded-tl-sm px-4 py-3 mt-0.5">
           {[0, 1, 2].map(i => (
@@ -127,7 +127,7 @@ function ChatBubble({ msg, onAddTodo, onUseSample }: { msg: ChatMessage; onAddTo
     <div className="flex items-start gap-2">
       {/* Popple avatar */}
       <div className="flex-shrink-0 mt-0.5">
-        <PoppleCharacter expression="idle" pendingCount={0} onClick={() => {}} size={32} mode="idle" silent accessory={accessory} />
+        <PoppleCharacter expression="idle" pendingCount={0} onClick={() => {}} size={44} mode="idle" silent accessory={accessory} />
       </div>
 
       <div className="flex flex-col gap-1.5 flex-1 min-w-0">
