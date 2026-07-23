@@ -150,11 +150,13 @@ const TodoItem: React.FC<TodoItemProps> = ({
               </div>
             )}
             {!todo.completed && (
-              <button
-                ref={dateButtonRef}
+              <span
+                ref={dateButtonRef as React.RefObject<HTMLSpanElement>}
                 onClick={openPicker}
-                style={{ lineHeight: 1, paddingTop: 2, paddingBottom: 2, WebkitAppearance: 'none', appearance: 'none' }}
-                className={`flex-shrink-0 font-space-mono text-[10px] px-2 rounded-md border transition-all inline-flex items-center ${
+                role="button"
+                tabIndex={0}
+                style={{ lineHeight: 1, paddingTop: 2, paddingBottom: 2 }}
+                className={`flex-shrink-0 cursor-pointer font-space-mono text-[10px] px-2 rounded-md border transition-all inline-flex items-center ${
                   todo.dueDate ? '' : 'opacity-0 group-hover/task:opacity-100'
                 } ${
                   todo.dueDate
@@ -167,7 +169,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
                 {todo.dueDate
                   ? badge?.label ?? new Date(todo.dueDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                   : '+ date'}
-              </button>
+              </span>
             )}
           </div>
           {showDatePicker && pickerPos && createPortal(
@@ -520,42 +522,37 @@ export default function TodoListScreen({
                         className="flex flex-col gap-2 bg-white border border-gray-200 rounded-2xl px-4 py-3 shadow-2xl absolute top-full right-0 mt-2"
                         style={{ minWidth: 260 }}
                       >
-                        <div className="flex items-center gap-2">
+                        <form className="flex items-center gap-2" onSubmit={e => {
+                          e.preventDefault();
+                          if (!newTaskText.trim()) return;
+                          onAddTodo(newTaskText.trim(), newTaskDue || undefined);
+                          setNewTaskText(''); setNewTaskDue(''); setFabOpen(false); setShowDatePicker(false);
+                        }}>
                           <input
                             ref={fabInputRef}
                             value={newTaskText}
                             onChange={e => setNewTaskText(e.target.value)}
-                            onKeyDown={e => {
-                              if (e.key === 'Enter' && newTaskText.trim()) {
-                                onAddTodo(newTaskText.trim(), newTaskDue || undefined);
-                                setNewTaskText(''); setNewTaskDue(''); setFabOpen(false); setShowDatePicker(false);
-                              }
-                              if (e.key === 'Escape') { setFabOpen(false); setNewTaskText(''); setNewTaskDue(''); setShowDatePicker(false); }
-                            }}
+                            onKeyDown={e => { if (e.key === 'Escape') { setFabOpen(false); setNewTaskText(''); setNewTaskDue(''); setShowDatePicker(false); } }}
                             placeholder="add a task…"
                             className="flex-1 bg-transparent text-gray-900 placeholder-gray-400 font-space-mono text-sm outline-none"
                             autoFocus
                             enterKeyHint="done"
                           />
                           <button
-                            onPointerDown={e => {
-                              e.preventDefault();
-                              if (!newTaskText.trim()) return;
-                              onAddTodo(newTaskText.trim(), newTaskDue || undefined);
-                              setNewTaskText(''); setNewTaskDue(''); setFabOpen(false); setShowDatePicker(false);
-                            }}
+                            type="submit"
                             className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
                               newTaskText.trim() ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-300'
                             }`}
                           >
                             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
                           </button>
-                        </div>
+                        </form>
                         <div className="flex items-center gap-1.5 flex-wrap">
                           {newTaskDue ? (
-                            <button
+                            <span
                               onClick={() => { setNewTaskDue(''); setShowDatePicker(false); }}
-                              className="flex items-center gap-1 bg-cyan-50 border border-cyan-300 text-cyan-700 font-space-mono text-[10px] px-2 py-0.5 rounded-md"
+                              role="button" tabIndex={0} style={{ paddingTop: 3, paddingBottom: 3 }}
+                              className="cursor-pointer inline-flex items-center gap-1 bg-cyan-50 border border-cyan-300 text-cyan-700 font-space-mono text-[10px] px-2 rounded-md"
                             >
                               {newTaskDue === todayStr
                                 ? 'today'
@@ -563,12 +560,12 @@ export default function TodoListScreen({
                                   ? 'tomorrow'
                                   : new Date(newTaskDue + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                               <span className="text-cyan-400 ml-0.5">×</span>
-                            </button>
+                            </span>
                           ) : (
                             <>
-                              <button onClick={() => setNewTaskDue(todayStr)} style={{ WebkitAppearance: 'none', appearance: 'none', paddingTop: 3, paddingBottom: 3 }} className="font-space-mono text-[10px] text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 border border-gray-200 hover:border-cyan-300 px-2 rounded-md transition-all inline-flex items-center">today</button>
-                              <button onClick={() => { const d = new Date(now); d.setDate(d.getDate() + 1); setNewTaskDue(d.toISOString().split('T')[0]); }} style={{ WebkitAppearance: 'none', appearance: 'none', paddingTop: 3, paddingBottom: 3 }} className="font-space-mono text-[10px] text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 border border-gray-200 hover:border-cyan-300 px-2 rounded-md transition-all inline-flex items-center">tomorrow</button>
-                              <button onClick={() => { const d = new Date(); setCalMonth({ year: d.getFullYear(), month: d.getMonth() }); setShowDatePicker(p => !p); }} style={{ WebkitAppearance: 'none', appearance: 'none', paddingTop: 3, paddingBottom: 3 }} className="font-space-mono text-[10px] text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 border border-gray-200 hover:border-cyan-300 px-2 rounded-md transition-all inline-flex items-center">pick date</button>
+                              <span onClick={() => setNewTaskDue(todayStr)} role="button" tabIndex={0} style={{ paddingTop: 3, paddingBottom: 3 }} className="cursor-pointer font-space-mono text-[10px] text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 border border-gray-200 hover:border-cyan-300 px-2 rounded-md transition-all inline-flex items-center">today</span>
+                              <span onClick={() => { const d = new Date(now); d.setDate(d.getDate() + 1); setNewTaskDue(d.toISOString().split('T')[0]); }} role="button" tabIndex={0} style={{ paddingTop: 3, paddingBottom: 3 }} className="cursor-pointer font-space-mono text-[10px] text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 border border-gray-200 hover:border-cyan-300 px-2 rounded-md transition-all inline-flex items-center">tomorrow</span>
+                              <span onClick={() => { const d = new Date(); setCalMonth({ year: d.getFullYear(), month: d.getMonth() }); setShowDatePicker(p => !p); }} role="button" tabIndex={0} style={{ paddingTop: 3, paddingBottom: 3 }} className="cursor-pointer font-space-mono text-[10px] text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 border border-gray-200 hover:border-cyan-300 px-2 rounded-md transition-all inline-flex items-center">pick date</span>
                             </>
                           )}
                         </div>
