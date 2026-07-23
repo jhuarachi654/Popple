@@ -134,6 +134,7 @@ export default function PoppleCharacter({
 
   // ── Periodic personality blurb ─────────────────────────────────────────────
   useEffect(() => {
+    if (silent) return;
     const schedule = () => {
       const delay = 12000 + Math.random() * 20000; // 12–32s
       periodicTimer.current = setTimeout(() => {
@@ -143,7 +144,7 @@ export default function PoppleCharacter({
     };
     schedule();
     return () => clearTimeout(periodicTimer.current);
-  }, [acc, reacting]);
+  }, [acc, reacting, silent]);
 
   const showBubble = (text: string) => {
     setBubble(text);
