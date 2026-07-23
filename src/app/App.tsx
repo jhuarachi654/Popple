@@ -1100,11 +1100,11 @@ export default function App() {
       )}
       
       {/* Fixed Top Navigation */}
-      {/* Guest mode banner — shown above nav until dismissed */}
+      {/* Guest mode banner — top of screen, out of the way of Popple and FAB */}
       {isGuestMode && !guestBannerDismissed && activeScreen !== 'game' && (
         <div
-          className="fixed left-0 right-0 z-40 bg-gray-900/95 backdrop-blur-sm border-t border-gray-700/50 px-4 py-2 flex items-center gap-3"
-          style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
+          className="fixed left-0 right-0 z-40 bg-gray-900/95 backdrop-blur-sm border-b border-gray-700/50 px-4 py-2 flex items-center gap-3"
+          style={{ top: 0 }}
         >
           <p className="font-space-mono text-[10px] text-gray-400 flex-1 leading-snug">
             Guest mode — your progress won't be saved.

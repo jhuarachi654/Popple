@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -584,6 +584,9 @@ export default function TodoListScreen({
   const [editingText, setEditingText] = useState('');
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const accessory = useMemo(() => {
+    try { return (localStorage.getItem('popple-accessory') as import('./PoppleCharacter').PoppleAccessory) ?? null; } catch { return null; }
+  }, []);
   const [chatOpen, setChatOpen] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
@@ -837,6 +840,7 @@ export default function TodoListScreen({
           size={80}
           mode="idle"
           silent
+          accessory={accessory}
         />
       </div>
 

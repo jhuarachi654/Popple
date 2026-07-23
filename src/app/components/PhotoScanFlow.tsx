@@ -1,15 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
+import { X, Check, ArrowLeft, ArrowRight, SkipForward } from '@phosphor-icons/react';
 import PoppleCharacter from './PoppleCharacter';
 import type { ExtractedTask } from './TaskSwipeDeck';
 
-const DIFF: Record<string, { pill: string; label: string }> = {
-  easy:   { pill: 'bg-emerald-100 text-emerald-700', label: 'quick win'   },
-  medium: { pill: 'bg-amber-100 text-amber-700',     label: 'some effort' },
-  hard:   { pill: 'bg-rose-100 text-rose-700',       label: 'big one'     },
-};
-
 type Phase = 'scanning' | 'reviewing';
+type PoppleMood = 'idle' | 'waiting' | 'celebrating';
 
 interface Props {
   imagePreview: string;
@@ -20,91 +16,169 @@ interface Props {
 }
 
 const MIN_SCAN_MS = 2800;
-
 const SWIPE_THRESHOLD = 80;
 const isTouch = typeof window !== 'undefined' && window.matchMedia('(hover: none) and (pointer: coarse)').matches;
 
+// Spotlight: 4 dark strips surrounding the region, leaving it clear
+function Spotlight({ regionStyle }: {
+  regionStyle: { left: number; top: number; width: number; height: number };
+}) {
+  const { left, top, width, height } = regionStyle;
+  const right = left + width;
+  const bottom = top + height;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        key="spotlight"
+        className="absolute inset-0 pointer-events-none"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        {/* top strip */}
+        <div className="absolute bg-black/65" style={{ top: 0, left: 0, right: 0, height: top }} />
+        {/* bottom strip */}
+        <div className="absolute bg-black/65" style={{ top: bottom, left: 0, right: 0, bottom: 0 }} />
+        {/* left strip */}
+        <div className="absolute bg-black/65" style={{ top, left: 0, width: left, height }} />
+        {/* right strip */}
+        <div className="absolute bg-black/65" style={{ top, left: right, right: 0, height }} />
+        {/* subtle bright rim around clear area */}
+        <div
+          className="absolute rounded-xl ring-2 ring-white/60 shadow-[0_0_20px_6px_rgba(255,255,255,0.15)]"
+          style={{ top, left, width, height }}
+        />
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
 function SwipeCard({
-  task, diff, cardAtBottom, onAccept, onDecline,
+  task, cardAtBottom, poppleMood, onAccept, onDecline, onDragX,
 }: {
   task: ExtractedTask;
-  diff: { pill: string; label: string };
   cardAtBottom: boolean;
+  poppleMood: PoppleMood;
   onAccept: () => void;
   onDecline: () => void;
+  onDragX: (x: number) => void;
 }) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-160, 160], [-8, 8]);
-  const acceptOpacity = useTransform(x, [0, SWIPE_THRESHOLD], [0, 1]);
-  const declineOpacity = useTransform(x, [-SWIPE_THRESHOLD, 0], [1, 0]);
+  const acceptOpacity = useTransform(x, [20, SWIPE_THRESHOLD], [0, 1]);
+  const declineOpacity = useTransform(x, [-SWIPE_THRESHOLD, -20], [1, 0]);
+
+  useEffect(() => {
+    return x.on('change', v => onDragX(v));
+  }, [x, onDragX]);
 
   const handleDragEnd = (_: unknown, info: { offset: { x: number } }) => {
+    onDragX(0);
     if (info.offset.x > SWIPE_THRESHOLD) onAccept();
     else if (info.offset.x < -SWIPE_THRESHOLD) onDecline();
   };
 
+  const cardPos = cardAtBottom ? { bottom: 28 } : { top: 96 };
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: cardAtBottom ? 24 : -24 }}
+      key={task.id}
+      initial={{ opacity: 0, y: cardAtBottom ? 20 : -20 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: cardAtBottom ? 12 : -12 }}
+      exit={{ opacity: 0, scale: 0.95 }}
       transition={{ type: 'spring', damping: 26, stiffness: 300 }}
-      className="absolute left-4 right-4 z-10"
-      style={cardAtBottom ? { bottom: 32 } : { top: 88 }}
+      className="absolute left-4 right-4 z-20"
+      style={cardPos}
     >
+      {/* Popple delivering the task */}
+      <motion.div
+        className="flex items-end gap-2 mb-2 px-1"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+      >
+        <PoppleCharacter
+          expression={poppleMood}
+          pendingCount={0}
+          onClick={() => {}}
+          size={36}
+          mode="idle"
+          silent
+        />
+        {/* Speech bubble */}
+        <div className="relative bg-black/75 backdrop-blur-md rounded-2xl rounded-bl-sm px-3 py-2 max-w-[80%]">
+          <p className="font-space-mono text-[11px] text-white/80 leading-relaxed">{task.coach_note}</p>
+          {/* bubble tail */}
+          <div className="absolute -bottom-1.5 left-3 w-3 h-3 bg-black/75 [clip-path:polygon(0_0,100%_0,0_100%)]" />
+        </div>
+      </motion.div>
+
       {isTouch ? (
         /* ── Mobile: swipeable card ── */
         <motion.div
           drag="x"
-          dragConstraints={{ left: -240, right: 240 }}
-          dragElastic={0.15}
+          dragConstraints={{ left: -260, right: 260 }}
+          dragElastic={0.12}
           onDragEnd={handleDragEnd}
           style={{ x, rotate }}
-          className="bg-black/70 backdrop-blur-md rounded-3xl px-5 py-4 space-y-2 border border-white/10 cursor-grab active:cursor-grabbing select-none"
+          className="bg-black/80 backdrop-blur-md rounded-3xl px-5 py-4 border border-white/10 cursor-grab active:cursor-grabbing select-none relative overflow-hidden"
         >
-          <motion.div style={{ opacity: acceptOpacity }}
-            className="absolute top-4 right-4 border border-emerald-400 text-emerald-400 rounded-lg px-2 py-0.5 font-space-mono text-[9px] rotate-6 pointer-events-none">
-            add ✓
+          {/* Accept hint — slides in from right as user drags right */}
+          <motion.div
+            style={{ opacity: acceptOpacity }}
+            className="absolute inset-y-0 right-0 flex items-center pr-5 pointer-events-none"
+          >
+            <div className="flex items-center gap-1.5 border border-emerald-400 text-emerald-400 rounded-xl px-3 py-1.5 rotate-6">
+              <Check size={12} weight="bold" />
+              <span className="font-space-mono text-[9px]">add</span>
+            </div>
           </motion.div>
-          <motion.div style={{ opacity: declineOpacity }}
-            className="absolute top-4 left-4 border border-rose-400 text-rose-400 rounded-lg px-2 py-0.5 font-space-mono text-[9px] -rotate-6 pointer-events-none">
-            skip ✕
+          {/* Decline hint — slides in from left as user drags left */}
+          <motion.div
+            style={{ opacity: declineOpacity }}
+            className="absolute inset-y-0 left-0 flex items-center pl-5 pointer-events-none"
+          >
+            <div className="flex items-center gap-1.5 border border-rose-400 text-rose-400 rounded-xl px-3 py-1.5 -rotate-6">
+              <X size={12} weight="bold" />
+              <span className="font-space-mono text-[9px]">skip</span>
+            </div>
           </motion.div>
-          <span className={`font-space-mono text-[9px] px-2 py-0.5 rounded-full ${diff.pill}`}>{diff.label}</span>
-          <p className="font-pixel text-lg text-white leading-snug">{task.title}</p>
-          <p className="font-space-mono text-[11px] text-white/60 leading-relaxed">{task.coach_note}</p>
-          <p className="font-space-mono text-[9px] text-white/30 text-center pt-1">swipe right to add · left to skip</p>
+
+          <p className="font-pixel text-lg text-white leading-snug pr-8">{task.title}</p>
+
+          {/* Subtle drag affordance arrows */}
+          <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/10">
+            <ArrowLeft size={14} className="text-white/20" />
+            <ArrowRight size={14} className="text-white/20" />
+          </div>
         </motion.div>
       ) : (
-        /* ── Desktop: stacked button options ── */
-        <div className="bg-black/75 backdrop-blur-md rounded-3xl overflow-hidden border border-white/10">
-          {/* Task info */}
-          <div className="px-5 pt-5 pb-4 space-y-1.5">
-            <span className={`font-space-mono text-[9px] px-2 py-0.5 rounded-full ${diff.pill}`}>{diff.label}</span>
+        /* ── Desktop: click options ── */
+        <div className="bg-black/80 backdrop-blur-md rounded-3xl overflow-hidden border border-white/10">
+          <div className="px-5 py-4">
             <p className="font-pixel text-lg text-white leading-snug">{task.title}</p>
-            <p className="font-space-mono text-[11px] text-white/55 leading-relaxed">{task.coach_note}</p>
           </div>
-          {/* Divider */}
           <div className="h-px bg-white/10" />
-          {/* Options */}
           <motion.button
             onClick={onAccept}
-            whileHover={{ backgroundColor: 'rgba(255,255,255,0.12)' }}
+            whileHover={{ backgroundColor: 'rgba(52,211,153,0.12)' }}
             whileTap={{ scale: 0.98 }}
-            className="w-full px-5 py-3.5 flex items-center gap-3 text-left transition-colors"
+            className="w-full px-5 py-3 flex items-center gap-3 text-left"
           >
-            <span className="w-6 h-6 rounded-full bg-white/15 border border-white/25 flex items-center justify-center font-space-mono text-xs text-white font-bold">1</span>
-            <span className="font-space-mono text-sm text-white">Yes, add this task</span>
+            <Check size={16} className="text-emerald-400" weight="bold" />
+            <span className="font-space-mono text-sm text-white">Add this task</span>
           </motion.button>
           <div className="h-px bg-white/10" />
           <motion.button
             onClick={onDecline}
-            whileHover={{ backgroundColor: 'rgba(255,255,255,0.06)' }}
+            whileHover={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
             whileTap={{ scale: 0.98 }}
-            className="w-full px-5 py-3.5 flex items-center gap-3 text-left transition-colors"
+            className="w-full px-5 py-3 flex items-center gap-3 text-left"
           >
-            <span className="w-6 h-6 rounded-full bg-white/10 border border-white/15 flex items-center justify-center font-space-mono text-xs text-white/60 font-bold">2</span>
-            <span className="font-space-mono text-sm text-white/60">Skip this one</span>
+            <X size={16} className="text-white/30" weight="bold" />
+            <span className="font-space-mono text-sm text-white/50">Skip</span>
           </motion.button>
         </div>
       )}
@@ -112,7 +186,6 @@ function SwipeCard({
   );
 }
 
-// Returns the rendered image rect within an object-contain img element
 function getContainRect(img: HTMLImageElement): { x: number; y: number; w: number; h: number } {
   const cw = img.clientWidth, ch = img.clientHeight;
   const nat = img.naturalWidth / img.naturalHeight;
@@ -127,9 +200,10 @@ export default function PhotoScanFlow({ imagePreview, tasks, onAccept, onDecline
   const [phase, setPhase] = useState<Phase>('scanning');
   const [current, setCurrent] = useState(0);
   const [accepted, setAccepted] = useState(0);
+  const [poppleMood, setPoppleMood] = useState<PoppleMood>('idle');
   const [containRect, setContainRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
-  const scanStartRef = React.useRef(Date.now());
+  const scanStartRef = useRef(Date.now());
 
   const updateContainRect = useCallback(() => {
     if (imgRef.current?.complete && imgRef.current.naturalWidth) {
@@ -151,16 +225,24 @@ export default function PhotoScanFlow({ imagePreview, tasks, onAccept, onDecline
     return () => clearTimeout(t);
   }, [tasks]);
 
+  const handleDragX = useCallback((val: number) => {
+    if (val > 30) setPoppleMood('celebrating');
+    else if (val < -30) setPoppleMood('waiting');
+    else setPoppleMood('idle');
+  }, []);
+
   const handleAccept = () => {
     if (!tasks) return;
     onAccept(tasks[current]);
     setAccepted(a => a + 1);
-    advance();
+    setPoppleMood('celebrating');
+    setTimeout(() => { setPoppleMood('idle'); advance(); }, 300);
   };
 
   const handleDecline = () => {
     if (!tasks) return;
     onDecline(tasks[current]);
+    setPoppleMood('idle');
     advance();
   };
 
@@ -223,7 +305,7 @@ export default function PhotoScanFlow({ imagePreview, tasks, onAccept, onDecline
             </motion.div>
           )}
 
-          {/* ── REVIEW phase — full photo, overlaid card ── */}
+          {/* ── REVIEW phase ── */}
           {phase === 'reviewing' && tasks && (
             <motion.div
               key="review"
@@ -232,7 +314,7 @@ export default function PhotoScanFlow({ imagePreview, tasks, onAccept, onDecline
               animate={{ opacity: 1 }}
               transition={{ duration: 0.35 }}
             >
-              {/* object-contain so AI region percentages align with visible image */}
+              {/* Full image — object-contain so region coords align */}
               <img
                 ref={imgRef}
                 src={imagePreview}
@@ -240,16 +322,15 @@ export default function PhotoScanFlow({ imagePreview, tasks, onAccept, onDecline
                 className="absolute inset-0 w-full h-full object-contain"
                 onLoad={updateContainRect}
               />
-              <div className="absolute inset-0 bg-black/25" />
+              {/* Base dim */}
+              <div className="absolute inset-0 bg-black/30" />
 
               {current < tasks.length ? (() => {
                 const task = tasks[current];
-                const diff = DIFF[task.difficulty_guess] ?? DIFF.easy;
                 const region = task.region;
                 const regionCenter = region ? region.y + region.h / 2 : 0.4;
                 const cardAtBottom = regionCenter < 0.55;
 
-                // Map region percentages into actual pixel position within the contain rect
                 const cr = containRect;
                 const regionStyle = (region && cr) ? {
                   left:   cr.x + region.x * cr.w,
@@ -260,60 +341,41 @@ export default function PhotoScanFlow({ imagePreview, tasks, onAccept, onDecline
 
                 return (
                   <>
+                    {/* Spotlight overlay */}
+                    {regionStyle && (
+                      <AnimatePresence mode="wait">
+                        <Spotlight key={`spot-${current}`} regionStyle={regionStyle} />
+                      </AnimatePresence>
+                    )}
+
                     {/* Top bar */}
                     <div className="absolute top-0 left-0 right-0 px-4 pt-10 flex items-center justify-between z-10">
-                      <div className="flex items-center gap-2">
-                        <PoppleCharacter expression="idle" pendingCount={0} onClick={() => {}} size={28} mode="idle" silent />
-                        <p className="font-space-mono text-white text-[10px] drop-shadow">{tasks.length - current} left</p>
+                      <div className="flex gap-1">
+                        {tasks.map((_, i) => (
+                          <div key={i} className={`h-1 rounded-full transition-all duration-300 ${
+                            i < current ? 'bg-white/30 w-2' : i === current ? 'bg-white w-4' : 'bg-white/20 w-2'
+                          }`} />
+                        ))}
                       </div>
-                      <div className="flex items-center gap-3">
-                        <div className="flex gap-1">
-                          {tasks.map((_, i) => (
-                            <div key={i} className={`h-1 rounded-full transition-all duration-300 ${
-                              i < current ? 'bg-white/30 w-2' : i === current ? 'bg-white w-4' : 'bg-white/20 w-2'
-                            }`} />
-                          ))}
-                        </div>
-                        <button onClick={onDone} className="font-space-mono text-[10px] text-white/70 border border-white/30 rounded-lg px-3 py-1 backdrop-blur-sm">
-                          skip all
-                        </button>
-                      </div>
+                      <button
+                        onClick={onDone}
+                        className="flex items-center gap-1.5 font-space-mono text-[10px] text-white/60 border border-white/25 rounded-lg px-3 py-1.5 backdrop-blur-sm"
+                      >
+                        <SkipForward size={11} />
+                        skip all
+                      </button>
                     </div>
 
-                    {/* Region highlight — positioned in pixel coords from containRect */}
-                    <AnimatePresence mode="wait">
-                      {regionStyle && (
-                        <motion.div
-                          key={`region-${current}`}
-                          initial={{ opacity: 0, scale: 1.08 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="absolute pointer-events-none"
-                          style={{ position: 'absolute', ...regionStyle }}
-                        >
-                          <div className="absolute inset-0 rounded-xl border-2 border-white shadow-[0_0_0_2px_rgba(255,255,255,0.25),0_0_16px_6px_rgba(255,255,255,0.2)]" />
-                          {['-top-1 -left-1', '-top-1 -right-1', '-bottom-1 -left-1', '-bottom-1 -right-1'].map((pos, i) => (
-                            <motion.div
-                              key={i}
-                              className={`absolute w-2 h-2 rounded-full bg-white ${pos}`}
-                              animate={{ opacity: [1, 0.3, 1] }}
-                              transition={{ duration: 1.4, delay: i * 0.2, repeat: Infinity }}
-                            />
-                          ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-
-                    {/* Swipeable task card */}
+                    {/* Popple + card */}
                     <AnimatePresence mode="wait">
                       <SwipeCard
                         key={`card-${current}`}
                         task={task}
-                        diff={diff}
                         cardAtBottom={cardAtBottom}
+                        poppleMood={poppleMood}
                         onAccept={handleAccept}
                         onDecline={handleDecline}
+                        onDragX={handleDragX}
                       />
                     </AnimatePresence>
                   </>

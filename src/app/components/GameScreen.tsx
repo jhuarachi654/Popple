@@ -52,11 +52,15 @@ interface Creature {
   externalReaction?: { text: string; nonce: number };
 }
 
-const CREATURE_SPEED = 0.567; // ~34px/s at 60fps
-const CREATURE_W     = 80;   // px footprint
-const CREATURE_H     = 88;   // full bounding box height
-const CREATURE_FOOT  = 73;   // px from top to visual foot contact (y2=68 + 5px stroke radius)
-const GRAVITY        = 1.4;  // px per frame (felt gravity — snappy return to ground)
+const CREATURE_SPEED    = 0.567; // ~34px/s at 60fps
+const CREATURE_W        = 80;   // px footprint
+const CREATURE_H        = 88;   // full bounding box height
+const CREATURE_FOOT     = 73;   // px from top to visual foot contact (y2=68 + 5px stroke radius)
+const GRAVITY           = 0.85; // px/frame² — gentle enough for nice arcs
+const RESTITUTION_Y     = 0.55; // floor bounce energy kept (multi-bounce decay)
+const RESTITUTION_WALL  = 0.80; // wall bounce energy kept
+const FRICTION_GROUND   = 0.82; // horizontal speed multiplier on each floor contact
+const AIR_DRAG          = 0.993; // per-frame vx damping while airborne
 
 export default function GameScreen({
   completedTodos,
@@ -122,20 +126,34 @@ export default function GameScreen({
         if (c.isDragging) return c;
         let { x, y, vx, vy } = c;
 
-        // Horizontal walk
-        x += vx * dt;
-        if (x <= 0)            { x = 0;            vx =  Math.abs(vx); }
-        else if (x >= cw - CREATURE_W) { x = cw - CREATURE_W; vx = -Math.abs(vx); }
+        const airborne = y > 0 || vy > 0;
 
-        // Gravity — always pulls to ground, no floating
-        if (y > 0 || vy < 0) {
+        // Horizontal movement + air drag when off ground
+        x += vx * dt;
+        if (airborne) vx *= Math.pow(AIR_DRAG, dt);
+        if (x <= 0) {
+          x  = 0;
+          vx = Math.abs(vx) * RESTITUTION_WALL;
+        } else if (x >= cw - CREATURE_W) {
+          x  = cw - CREATURE_W;
+          vx = -Math.abs(vx) * RESTITUTION_WALL;
+        }
+
+        // Gravity + vertical bounce
+        if (y > 0 || vy > 0) {
           vy -= GRAVITY * dt;
           y  += vy * dt;
           if (y <= 0) {
             y  = 0;
-            const bounce = Math.abs(vy) * 0.28;
-            vy = bounce > 1.2 ? bounce : 0; // small recoil, dies out quickly
-            vx = vx > 0 ? CREATURE_SPEED : -CREATURE_SPEED;
+            const bounceVy = Math.abs(vy) * RESTITUTION_Y;
+            vy = bounceVy > 1.8 ? bounceVy : 0;
+            // Horizontal friction on each floor contact
+            vx *= FRICTION_GROUND;
+            // Once settled, drift back to walk speed
+            if (vy === 0) {
+              const dir = vx >= 0 ? 1 : -1;
+              vx = dir * CREATURE_SPEED;
+            }
           }
         }
 
@@ -238,12 +256,14 @@ export default function GameScreen({
       const oldest = history[0];
       const dt = Math.max(1, newest.t - oldest.t);
       const rawVx =  (newest.x - oldest.x) / dt * 16;
-      const rawVy = -(newest.y - oldest.y) / dt * 16; // invert: up = positive
+      const rawVy = -(newest.y - oldest.y) / dt * 16; // invert: screen-up = positive
       const speed = Math.sqrt(rawVx * rawVx + rawVy * rawVy);
-      if (speed > 4) {
+      if (speed > 3) {
         isThrow = true;
-        throwVx = rawVx * 0.4;
-        throwVy = Math.max(0, rawVy * 0.4); // only upward component
+        // Scale by gesture speed so a strong flick feels punchy
+        const scale = Math.min(1.0, speed / 30) * 0.65;
+        throwVx = rawVx * scale;
+        throwVy = rawVy * scale; // allow downward throws to arc down and bounce
       }
     }
 

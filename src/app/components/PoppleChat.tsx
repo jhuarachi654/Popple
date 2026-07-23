@@ -1,8 +1,10 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { createPortal } from 'react-dom';
 import PoppleCharacter from './PoppleCharacter';
 import PhotoScanFlow from './PhotoScanFlow';
+import CameraCapture from './CameraCapture';
+import { Camera, Image, ArrowElbowDownLeft, Microphone } from '@phosphor-icons/react';
 import type { ExtractedTask } from './TaskSwipeDeck';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -72,7 +74,7 @@ function ChatBubble({ msg, onAddTodo, onUseSample }: { msg: ChatMessage; onAddTo
     return (
       <div className="flex items-start gap-2">
         <div className="flex-shrink-0 mt-0.5">
-          <PoppleCharacter expression="waiting" pendingCount={0} onClick={() => {}} size={32} mode="idle" silent />
+          <PoppleCharacter expression="waiting" pendingCount={0} onClick={() => {}} size={32} mode="idle" silent accessory={accessory} />
         </div>
         <div className="flex gap-1 bg-gray-100 rounded-2xl rounded-tl-sm px-4 py-3 mt-0.5">
           {[0, 1, 2].map(i => (
@@ -125,7 +127,7 @@ function ChatBubble({ msg, onAddTodo, onUseSample }: { msg: ChatMessage; onAddTo
     <div className="flex items-start gap-2">
       {/* Popple avatar */}
       <div className="flex-shrink-0 mt-0.5">
-        <PoppleCharacter expression="idle" pendingCount={0} onClick={() => {}} size={32} mode="idle" silent />
+        <PoppleCharacter expression="idle" pendingCount={0} onClick={() => {}} size={32} mode="idle" silent accessory={accessory} />
       </div>
 
       <div className="flex flex-col gap-1.5 flex-1 min-w-0">
@@ -163,6 +165,11 @@ export default function PoppleChat({ onAddTodo, onClose }: Props) {
   // Photo scan flow state
   const [scanImage, setScanImage] = useState<string | null>(null);
   const [scanTasks, setScanTasks] = useState<ExtractedTask[] | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+
+  const accessory = useMemo(() => {
+    try { return (localStorage.getItem('popple-accessory') as import('./PoppleCharacter').PoppleAccessory) ?? null; } catch { return null; }
+  }, []);
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
@@ -231,6 +238,26 @@ export default function PoppleChat({ onAddTodo, onClose }: Props) {
     setInputText('');
     const msgId = `user-${Date.now()}`;
     setMessages(prev => [...prev, { id: msgId, role: 'user', text }]);
+
+    // Detect greetings / chit-chat — reply conversationally instead of extracting tasks
+    const lower = text.toLowerCase().replace(/[^a-z0-9 ]/g, '');
+    const isChitChat = /^(hey|hi|hello|sup|yo|hiya|howdy|helo)[\s!?]*$/.test(lower)
+      || /how are you|how('?re| are) (you|things)|what'?s up|you good|you okay/.test(lower)
+      || /^(thanks|thank you|thx|ty|cheers|cool|nice|ok|okay|great|awesome|got it|sounds good)[\s!?]*$/.test(lower);
+
+    if (isChitChat) {
+      const replies = [
+        "hey!! doing great, ready to help you crush your list 💪",
+        "good!! what are we tackling today?",
+        "always good when you're here! what's on your mind?",
+        "living my best pixel life. what do you need?",
+        "honestly thriving. you?? also what tasks do we have today",
+      ];
+      const reply = replies[Math.floor(Math.random() * replies.length)];
+      setMessages(prev => [...prev, { id: `popple-${Date.now()}`, role: 'popple', text: reply }]);
+      return;
+    }
+
     await extractAndRespond({ transcript: text }, msgId);
   }, [inputText, isProcessing, extractAndRespond]);
 
@@ -424,13 +451,21 @@ export default function PoppleChat({ onAddTodo, onClose }: Props) {
               exit={{ opacity: 0, scale: 0.97 }}
               className="flex items-center gap-2 bg-gray-900 rounded-2xl px-3 py-2"
             >
-              {/* Photo */}
+              {/* Camera (live) */}
+              <motion.button
+                whileTap={{ scale: 0.85 }}
+                onClick={() => setCameraOpen(true)}
+                className="flex-shrink-0 w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-white"
+              >
+                <Camera size={18} />
+              </motion.button>
+              {/* Photo from library */}
               <motion.button
                 whileTap={{ scale: 0.85 }}
                 onClick={() => photoInputRef.current?.click()}
-                className="flex-shrink-0 w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-base"
+                className="flex-shrink-0 w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-white"
               >
-                📷
+                <Image size={18} />
               </motion.button>
 
               {/* Text */}
@@ -450,9 +485,9 @@ export default function PoppleChat({ onAddTodo, onClose }: Props) {
                   whileTap={{ scale: 0.85 }}
                   onClick={handleSend}
                   disabled={isProcessing}
-                  className="flex-shrink-0 w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center font-space-mono text-sm text-white disabled:opacity-40"
+                  className="flex-shrink-0 w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-white disabled:opacity-40"
                 >
-                  ↵
+                  <ArrowElbowDownLeft size={18} weight="bold" />
                 </motion.button>
               ) : (
                 <motion.button
@@ -460,10 +495,10 @@ export default function PoppleChat({ onAddTodo, onClose }: Props) {
                   onPointerDown={handleMicDown}
                   onPointerUp={handleMicUp}
                   disabled={!hasSpeechAPI}
-                  className="flex-shrink-0 w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-base touch-none select-none disabled:opacity-30"
+                  className="flex-shrink-0 w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-white touch-none select-none disabled:opacity-30"
                   title="Hold to speak"
                 >
-                  🎙
+                  <Microphone size={18} />
                 </motion.button>
               )}
             </motion.div>
@@ -479,6 +514,20 @@ export default function PoppleChat({ onAddTodo, onClose }: Props) {
         className="hidden"
         onChange={handlePhotoChange}
       />
+
+      {/* Camera capture — portal */}
+      {cameraOpen && createPortal(
+        <AnimatePresence>
+          <CameraCapture
+            onCapture={(dataUrl, base64, mimeType) => {
+              setCameraOpen(false);
+              startScan(dataUrl, base64, mimeType);
+            }}
+            onClose={() => setCameraOpen(false)}
+          />
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* Photo scan flow — portal so it covers everything */}
       {scanImage && createPortal(
