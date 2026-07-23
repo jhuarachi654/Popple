@@ -19,17 +19,23 @@ interface Props {
   onDone: () => void;
 }
 
+const MIN_SCAN_MS = 2800; // always show the scan animation for at least this long
+
 export default function PhotoScanFlow({ imagePreview, tasks, onAccept, onDecline, onDone }: Props) {
   const [phase, setPhase] = useState<Phase>('scanning');
   const [revealedCount, setRevealedCount] = useState(0);
   const [current, setCurrent] = useState(0);
   const [accepted, setAccepted] = useState(0);
+  const scanStartRef = React.useRef(Date.now());
 
-  // Once tasks arrive, move to revealing
+  // Once tasks arrive, wait for minimum scan time before revealing
   useEffect(() => {
     if (tasks === null) return;
     if (tasks.length === 0) { onDone(); return; }
-    setPhase('revealing');
+    const elapsed = Date.now() - scanStartRef.current;
+    const remaining = Math.max(0, MIN_SCAN_MS - elapsed);
+    const t = setTimeout(() => setPhase('revealing'), remaining);
+    return () => clearTimeout(t);
   }, [tasks]);
 
   // Stagger task reveal one by one
@@ -65,11 +71,12 @@ export default function PhotoScanFlow({ imagePreview, tasks, onAccept, onDecline
 
   return (
     <motion.div
-      className="fixed inset-0 z-[10010] bg-black flex flex-col"
+      className="fixed inset-0 z-[10010] bg-black/70 flex items-center justify-center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
+    <div className="relative w-full h-full flex flex-col" style={{ maxWidth: 480, maxHeight: '100dvh' }}>
       <AnimatePresence mode="wait">
 
         {/* ── SCAN phase ── */}
@@ -225,7 +232,7 @@ export default function PhotoScanFlow({ imagePreview, tasks, onAccept, onDecline
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -60 }}
                     transition={{ type: 'spring', damping: 26, stiffness: 300 }}
-                    className="pixel-notebook rounded-2xl shadow-lg p-5 flex-1 flex flex-col justify-between"
+                    className="pixel-notebook rounded-2xl shadow-lg p-5 flex flex-col justify-between"
                   >
                     <div className="space-y-3">
                       {/* Progress dots */}
@@ -290,6 +297,7 @@ export default function PhotoScanFlow({ imagePreview, tasks, onAccept, onDecline
         )}
 
       </AnimatePresence>
+    </div>
     </motion.div>
   );
 }
