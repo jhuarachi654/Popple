@@ -385,9 +385,11 @@ export default function PoppleChat({ onAddTodo, onClose, initialMessage }: Props
           id: typingId, role: 'popple' as const,
           text: tasks.length === 0 ? "hmm, couldn't spot any tasks in that — try again?"
             : tasks.length === 1 ? "got one thing from that:" : `caught ${tasks.length} things:`,
-          tasks: tasks.length > 0 ? tasks : undefined,
         } : m
       ));
+      if (tasks.length > 0) {
+        setActiveScan({ tasks, selected: tasks.map(() => true) });
+      }
     } catch {
       setMessages(prev => prev.map(m =>
         m.id === typingId ? { id: typingId, role: 'popple' as const, text: "something went wrong — try again?" } : m
