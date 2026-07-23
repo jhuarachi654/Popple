@@ -44,7 +44,7 @@ function SwipeCard({
   onDecline: () => void;
 }) {
   const x = useMotionValue(0);
-  const rotate = useTransform(x, [-200, 200], [-12, 12]);
+  const rotate = useTransform(x, [-200, 200], [-10, 10]);
   const acceptOpacity = useTransform(x, [0, SWIPE_THRESHOLD], [0, 1]);
   const declineOpacity = useTransform(x, [-SWIPE_THRESHOLD, 0], [1, 0]);
   const diff = DIFF[task.difficulty_guess] ?? DIFF.easy;
@@ -70,7 +70,7 @@ function SwipeCard({
         dragElastic={0.18}
         onDragEnd={handleDragEnd}
         style={isTop ? { x, rotate } : {}}
-        className="pixel-notebook rounded-2xl shadow-xl p-5 mx-1 cursor-grab active:cursor-grabbing select-none"
+        className="bg-white rounded-3xl shadow-xl px-6 py-6 mx-1 cursor-grab active:cursor-grabbing select-none border border-gray-100"
       >
         {isTop && (
           <>
@@ -78,7 +78,7 @@ function SwipeCard({
               style={{ opacity: acceptOpacity }}
               className="absolute top-5 right-5 border-2 border-emerald-500 text-emerald-600 rounded-lg px-3 py-1 font-pixel text-xs rotate-12 pointer-events-none"
             >
-              add it ✓
+              add ✓
             </motion.div>
             <motion.div
               style={{ opacity: declineOpacity }}
@@ -90,16 +90,14 @@ function SwipeCard({
         )}
 
         <div className="space-y-3">
-          <span className={`font-space-mono text-[9px] px-2 py-0.5 rounded-full ${diff.pill}`}>
+          <span className={`inline-block font-space-mono text-[9px] px-2 py-0.5 rounded-full ${diff.pill}`}>
             {diff.label}
           </span>
-          <p className="font-pixel text-base text-gray-900 leading-snug">{task.title}</p>
-          <div className="h-px bg-gray-100" />
-          <p className="font-space-mono text-[11px] text-gray-500 leading-relaxed">{task.coach_note}</p>
+          <p className="font-pixel text-xl text-gray-900 leading-snug">{task.title}</p>
         </div>
 
         {isTop && (
-          <p className="font-space-mono text-[9px] text-gray-300 text-center mt-4 pointer-events-none">
+          <p className="font-space-mono text-[9px] text-gray-300 text-center mt-6 pointer-events-none">
             swipe right to add · left to skip
           </p>
         )}
@@ -121,6 +119,11 @@ export default function TaskSwipeDeck({
   const remaining = tasks.length - current;
   const isDone = current >= tasks.length;
 
+  const handleAddAll = () => {
+    const toAdd = tasks.length - current;
+    for (let i = 0; i < toAdd; i++) onAccept();
+  };
+
   return (
     <motion.div
       className="fixed inset-0 z-[10002] flex flex-col"
@@ -129,13 +132,12 @@ export default function TaskSwipeDeck({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
-      {/* Soft backdrop */}
-      <div className="absolute inset-0 bg-white/80 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-white/85 backdrop-blur-sm" />
 
       <div className="relative z-10 flex flex-col h-full px-5 pt-6">
 
-        {/* Popple + header */}
-        <div className="flex items-end justify-between mb-4">
+        {/* Header */}
+        <div className="flex items-end justify-between mb-5">
           <div>
             <p className="font-space-mono text-[10px] text-gray-400 uppercase tracking-widest mb-1">
               {isDone ? 'all done' : `${remaining} left`}
@@ -146,19 +148,30 @@ export default function TaskSwipeDeck({
                 : 'here\'s what I caught'}
             </p>
           </div>
-          <PoppleCharacter
-            expression={isDone ? 'celebrating' : poppleExpression}
-            pendingCount={0}
-            onClick={() => {}}
-            size={72}
-            mode="idle"
-            externalReaction={poppleReaction}
-          />
+          <div className="flex items-center gap-2">
+            {!isDone && remaining > 1 && (
+              <motion.button
+                onClick={handleAddAll}
+                whileTap={{ scale: 0.92 }}
+                className="font-space-mono text-[10px] text-gray-600 border border-gray-200 bg-white rounded-xl px-3 py-1.5"
+              >
+                add all
+              </motion.button>
+            )}
+            <PoppleCharacter
+              expression={isDone ? 'celebrating' : poppleExpression}
+              pendingCount={0}
+              onClick={() => {}}
+              size={60}
+              mode="idle"
+              externalReaction={poppleReaction}
+            />
+          </div>
         </div>
 
         {/* Progress dots */}
         {!isDone && (
-          <div className="flex gap-1.5 mb-5">
+          <div className="flex gap-1.5 mb-6">
             {tasks.map((_, i) => (
               <div
                 key={i}
@@ -185,7 +198,7 @@ export default function TaskSwipeDeck({
           </div>
         ) : (
           <>
-            <div className="relative flex-1" style={{ minHeight: 220, maxHeight: 260 }}>
+            <div className="relative flex-1" style={{ minHeight: 200, maxHeight: 240 }}>
               <AnimatePresence>
                 {tasks.slice(current, current + 3).map((task, stackIdx) => (
                   <SwipeCard
@@ -212,7 +225,7 @@ export default function TaskSwipeDeck({
               <motion.button
                 onClick={onAccept}
                 whileTap={{ scale: 0.88 }}
-                className="w-14 h-14 rounded-full bg-gray-900 text-white flex items-center justify-center text-xl"
+                className="w-14 h-14 rounded-full bg-gray-900 text-white flex items-center justify-center text-xl shadow-lg"
               >
                 ✓
               </motion.button>
