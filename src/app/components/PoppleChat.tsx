@@ -5,6 +5,7 @@ import PoppleCharacter from './PoppleCharacter';
 import CameraCapture from './CameraCapture';
 import { Camera, Image, ArrowElbowDownLeft, Microphone, ArrowRight, Check } from '@phosphor-icons/react';
 import type { ExtractedTask } from './TaskSwipeDeck';
+import type { PoppleAccessory } from './PoppleCharacter';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -75,7 +76,7 @@ function getConversationalReply(text: string): string | null {
 
 // ── Progressive scan loading bubble ──────────────────────────────────────────
 
-function ScanLoadingBubble({ accessory }: { accessory: import('./PoppleCharacter').PoppleAccessory }) {
+function ScanLoadingBubble({ accessory }: { accessory: PoppleAccessory }) {
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
@@ -110,7 +111,7 @@ function ScanLoadingBubble({ accessory }: { accessory: import('./PoppleCharacter
 function ChatBubble({ msg, onUseSample, accessory }: {
   msg: ChatMessage;
   onUseSample?: () => void;
-  accessory: import('./PoppleCharacter').PoppleAccessory;
+  accessory: PoppleAccessory;
 }) {
   const isUser = msg.role === 'user';
 
@@ -264,7 +265,7 @@ export default function PoppleChat({ onAddTodo, onClose }: Props) {
   const [activeScan, setActiveScan] = useState<ActiveScan | null>(null);
 
   const accessory = useMemo(() => {
-    try { return (localStorage.getItem('popple-accessory') as import('./PoppleCharacter').PoppleAccessory) ?? null; } catch { return null; }
+    try { return (localStorage.getItem('popple-accessory') as PoppleAccessory) ?? null; } catch { return null; }
   }, []);
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
