@@ -206,7 +206,8 @@ function ScanChecklist({ scan, onConfirm, onDismiss }: {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 12 }}
-      className="flex-shrink-0 mx-4 mb-2 bg-gray-50 border border-gray-200 rounded-2xl shadow-md overflow-hidden"
+      className="flex-shrink-0 mx-4 mb-2 bg-gray-50 border border-gray-200 rounded-2xl overflow-hidden"
+      style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.10)' }}
     >
       <div className="px-4 pt-3 pb-1">
         <p className="font-space-mono text-xs text-gray-400">check the ones you want to add</p>
