@@ -20,6 +20,7 @@ import PoppleCharacter from './PoppleCharacter';
 import PoppleChat from './PoppleChat';
 import { toast } from 'sonner';
 import type { Todo } from '../App';
+import type { PoppleAccessory } from './PoppleCharacter';
 import pixelNoTasksIcon from 'figma:asset/5765ff71efcec8f85a51ea67d9c56fb1dafbd5a1.png';
 
 interface TodoListScreenProps {
@@ -598,7 +599,7 @@ export default function TodoListScreen({
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const accessory = useMemo(() => {
-    try { return (localStorage.getItem('popple-accessory') as import('./PoppleCharacter').PoppleAccessory) ?? null; } catch { return null; }
+    try { return (localStorage.getItem('popple-accessory') as PoppleAccessory) ?? null; } catch { return null; }
   }, []);
   const [chatOpen, setChatOpen] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
