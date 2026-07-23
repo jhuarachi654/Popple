@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { HelpCircle, Bell, Shirt } from 'lucide-react';
 import PoppleCharacter, { type PoppleAccessory } from './PoppleCharacter';
@@ -52,11 +53,20 @@ interface Creature {
   externalReaction?: { text: string; nonce: number };
 }
 
-const CREATURE_SPEED = 0.567; // ~34px/s at 60fps
-const CREATURE_W     = 80;   // px footprint
-const CREATURE_H     = 88;   // full bounding box height
-const CREATURE_FOOT  = 73;   // px from top to visual foot contact (y2=68 + 5px stroke radius)
-const GRAVITY        = 1.4;  // px per frame (felt gravity — snappy return to ground)
+const CREATURE_SPEED    = 0.567; // ~34px/s at 60fps
+const CREATURE_W        = 80;   // px footprint
+const CREATURE_H        = 88;   // full bounding box height
+const CREATURE_FOOT     = 73;   // px from top to visual foot contact (y2=68 + 5px stroke radius)
+const GRAVITY           = 0.85; // px/frame² — gentle enough for nice arcs
+const RESTITUTION_Y     = 0.55; // floor bounce energy kept (multi-bounce decay)
+const RESTITUTION_WALL  = 0.80; // wall bounce energy kept
+const FRICTION_GROUND   = 0.82; // horizontal speed multiplier on each floor contact
+const AIR_DRAG          = 0.993; // per-frame vx damping while airborne
+
+// Bench platform: right:64, width:60, bottom offset:12px, svg height:36px
+const BENCH_RIGHT_OFFSET = 64;   // px from right edge of container
+const BENCH_WIDTH        = 60;
+const BENCH_TOP_Y        = 41;   // bench seat height above ground (SVG leg height + 5px lift)
 
 export default function GameScreen({
   completedTodos,
@@ -122,20 +132,44 @@ export default function GameScreen({
         if (c.isDragging) return c;
         let { x, y, vx, vy } = c;
 
-        // Horizontal walk
-        x += vx * dt;
-        if (x <= 0)            { x = 0;            vx =  Math.abs(vx); }
-        else if (x >= cw - CREATURE_W) { x = cw - CREATURE_W; vx = -Math.abs(vx); }
+        // Determine floor height: bench platform or ground
+        const benchLeft = cw - BENCH_RIGHT_OFFSET - BENCH_WIDTH;
+        const benchRight = cw - BENCH_RIGHT_OFFSET;
+        const creatureCenterX = x + CREATURE_W / 2;
+        const onBenchX = creatureCenterX > benchLeft && creatureCenterX < benchRight;
+        const floorY = onBenchX ? BENCH_TOP_Y : 0;
 
-        // Gravity — always pulls to ground, no floating
-        if (y > 0 || vy < 0) {
+        // Smooth step-up: glide y toward bench height as Popple walks on, no abrupt jump
+        if (onBenchX && y < BENCH_TOP_Y && vy <= 0) {
+          y = Math.min(y + 5 * dt, BENCH_TOP_Y);
+        }
+
+        const airborne = y > floorY || vy > 0;
+
+        // Horizontal movement + air drag when off ground
+        x += vx * dt;
+        if (airborne) vx *= Math.pow(AIR_DRAG, dt);
+        if (x <= 0) {
+          x  = 0;
+          vx = Math.abs(vx) * RESTITUTION_WALL;
+        } else if (x >= cw - CREATURE_W) {
+          x  = cw - CREATURE_W;
+          vx = -Math.abs(vx) * RESTITUTION_WALL;
+        }
+
+        // Gravity + vertical bounce
+        if (y > floorY || vy > 0) {
           vy -= GRAVITY * dt;
           y  += vy * dt;
-          if (y <= 0) {
-            y  = 0;
-            const bounce = Math.abs(vy) * 0.28;
-            vy = bounce > 1.2 ? bounce : 0; // small recoil, dies out quickly
-            vx = vx > 0 ? CREATURE_SPEED : -CREATURE_SPEED;
+          if (y <= floorY) {
+            y  = floorY;
+            const bounceVy = Math.abs(vy) * RESTITUTION_Y;
+            vy = bounceVy > 1.8 ? bounceVy : 0;
+            vx *= FRICTION_GROUND;
+            if (vy === 0) {
+              const dir = vx >= 0 ? 1 : -1;
+              vx = dir * CREATURE_SPEED;
+            }
           }
         }
 
@@ -238,12 +272,14 @@ export default function GameScreen({
       const oldest = history[0];
       const dt = Math.max(1, newest.t - oldest.t);
       const rawVx =  (newest.x - oldest.x) / dt * 16;
-      const rawVy = -(newest.y - oldest.y) / dt * 16; // invert: up = positive
+      const rawVy = -(newest.y - oldest.y) / dt * 16; // invert: screen-up = positive
       const speed = Math.sqrt(rawVx * rawVx + rawVy * rawVy);
-      if (speed > 4) {
+      if (speed > 3) {
         isThrow = true;
-        throwVx = rawVx * 0.4;
-        throwVy = Math.max(0, rawVy * 0.4); // only upward component
+        // Scale by gesture speed so a strong flick feels punchy
+        const scale = Math.min(1.0, speed / 30) * 0.65;
+        throwVx = rawVx * scale;
+        throwVy = rawVy * scale; // allow downward throws to arc down and bounce
       }
     }
 
@@ -472,20 +508,31 @@ export default function GameScreen({
                 className="absolute z-[100] top-9 right-0 bg-white rounded-xl shadow-xl border border-gray-200 p-1.5 flex flex-row gap-0.5"
               >
                 {([
-                  { id: null as PoppleAccessory,        icon: (
+                  { id: null as PoppleAccessory,       icon: (
                     <svg viewBox="0 0 20 20" width="18" height="18"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" strokeWidth="1.5"/><line x1="7" y1="10" x2="13" y2="10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
                   )},
-                  { id: 'beanie' as PoppleAccessory,    icon: (
+                  { id: 'beanie' as PoppleAccessory,   icon: (
                     <svg viewBox="22 4 36 18" width="22" height="14"><ellipse cx="40" cy="13" rx="14" ry="7" fill="#e55a2b"/><rect x="27" y="12" width="26" height="6" rx="3" fill="#e55a2b"/><line x1="33" y1="12" x2="33" y2="18" stroke="rgba(0,0,0,0.2)" strokeWidth="1.5" strokeLinecap="round"/><line x1="40" y1="12" x2="40" y2="18" stroke="rgba(0,0,0,0.2)" strokeWidth="1.5" strokeLinecap="round"/><line x1="47" y1="12" x2="47" y2="18" stroke="rgba(0,0,0,0.2)" strokeWidth="1.5" strokeLinecap="round"/><circle cx="40" cy="6" r="4" fill="white" stroke="#e55a2b" strokeWidth="0.5"/></svg>
                   )},
-                  { id: 'grad-cap' as PoppleAccessory,  icon: (
-                    <svg viewBox="18 6 44 16" width="22" height="14"><rect x="20" y="9" width="40" height="4" rx="1.5" fill="#1a202c"/><ellipse cx="40" cy="17" rx="10" ry="4" fill="#1a202c"/><line x1="56" y1="9" x2="61" y2="19" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round"/><circle cx="61" cy="20" r="2" fill="#f59e0b"/></svg>
+                  { id: 'flower' as PoppleAccessory,   icon: (
+                    <svg viewBox="0 0 20 20" width="18" height="18">
+                      <circle cx="10" cy="5"  r="3.5" fill="#f472b6"/>
+                      <circle cx="15" cy="10" r="3.5" fill="#f9a8d4"/>
+                      <circle cx="10" cy="15" r="3.5" fill="#f472b6"/>
+                      <circle cx="5"  cy="10" r="3.5" fill="#f9a8d4"/>
+                      <circle cx="10" cy="10" r="3"   fill="#fbbf24"/>
+                    </svg>
                   )},
-                  { id: 'crown' as PoppleAccessory,     icon: (
+                  { id: 'dog-ears' as PoppleAccessory, icon: (
+                    <svg viewBox="0 0 20 20" width="18" height="18">
+                      <ellipse cx="5"  cy="9" rx="4" ry="6" fill="#92400e" transform="rotate(-15 5 9)"/>
+                      <ellipse cx="5"  cy="9" rx="2.5" ry="4" fill="#c8a97e" transform="rotate(-15 5 9)"/>
+                      <ellipse cx="15" cy="9" rx="4" ry="6" fill="#92400e" transform="rotate(15 15 9)"/>
+                      <ellipse cx="15" cy="9" rx="2.5" ry="4" fill="#c8a97e" transform="rotate(15 15 9)"/>
+                    </svg>
+                  )},
+                  { id: 'crown' as PoppleAccessory,    icon: (
                     <svg viewBox="23 2 34 16" width="22" height="14"><polygon points="26,15 30,5 34,15" fill="#f59e0b"/><polygon points="35,15 40,2 45,15" fill="#f59e0b"/><polygon points="46,15 50,5 54,15" fill="#f59e0b"/><rect x="24" y="13" width="32" height="6" rx="2" fill="#f59e0b"/><circle cx="30" cy="16" r="1.5" fill="#ef4444"/><circle cx="40" cy="15" r="2" fill="#ef4444"/><circle cx="50" cy="16" r="1.5" fill="#ef4444"/></svg>
-                  )},
-                  { id: 'party-hat' as PoppleAccessory, icon: (
-                    <svg viewBox="22 0 36 22" width="18" height="18"><polygon points="40,1 24,20 56,20" fill="#a78bfa"/><polygon points="40,1 33,13 40,15 47,13" fill="#7c3aed" opacity="0.4"/><circle cx="40" cy="1" r="2.5" fill="#fbbf24"/><line x1="24" y1="20" x2="56" y2="20" stroke="#7c3aed" strokeWidth="1.5"/></svg>
                   )},
                 ] as { id: PoppleAccessory; icon: React.ReactNode }[]).map(acc => {
                   const unlocked = true;
@@ -510,40 +557,54 @@ export default function GameScreen({
       {/* ── Creature space (for physics bounds) ── */}
       <div ref={containerRef} className="absolute inset-x-0 pointer-events-none" style={{ top: 0, bottom: 'calc(5rem + env(safe-area-inset-bottom))' }} />
 
-      {/* ── Creatures — anchored to nav bar top via bottom CSS ── */}
-      <AnimatePresence>
-        {creatures.map(creature => (
-          <div
-            key={creature.id}
-            className="absolute"
-            style={{
-              left: creature.x,
-              bottom: `calc(5rem + env(safe-area-inset-bottom) + ${Math.round(creature.y)}px - ${CREATURE_H - CREATURE_FOOT}px)`,
-              cursor: creature.isDragging ? 'grabbing' : 'grab',
-              zIndex: 9999,
-            }}
-            onPointerDown={e => handleCreaturePointerDown(e, creature.id)}
-          >
-            <motion.div
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 350, damping: 22 }}
-            >
-              <PoppleCharacter
-                expression={creature.expression === 'sleeping' ? 'sleeping' : (creature.expression === 'angry' || creature.expression === 'ticking') ? creature.expression : creature.y > 10 && !creature.isDragging ? 'waiting' : creature.expression}
-                mode={creature.isDragging || creature.y > 10 || creature.expression === 'sleeping' || creature.expression === 'angry' || creature.expression === 'ticking' ? 'idle' : 'walk'}
-                pendingCount={0}
-                accessory={equippedAcc}
-                facingLeft={creature.vx < 0}
-                onClick={() => {}}
-                externalReaction={creature.externalReaction}
-                size={80}
-              />
-            </motion.div>
+      {/* ── Bench + creatures — portalled to body to escape all stacking contexts ── */}
+      {createPortal(
+        <>
+          {/* Bench — double outline: black outer ring, white inner ring, tan fill */}
+          <div className="fixed pointer-events-none" style={{ right: 64, bottom: 'calc(5rem + env(safe-area-inset-bottom) - 1px)', zIndex: 9998 }}>
+            <svg width="72" height="48" viewBox="-6 -6 72 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* white outline */}
+              <path d="M3,0 H57 Q60,0 60,3 V5 Q60,8 57,8 H56 V36 H48 V8 H12 V36 H4 V8 H3 Q0,8 0,5 V3 Q0,0 3,0 Z" fill="none" stroke="#fffbe6" strokeWidth="7" strokeLinejoin="round"/>
+              {/* bench fill */}
+              <path d="M3,0 H57 Q60,0 60,3 V5 Q60,8 57,8 H56 V36 H48 V8 H12 V36 H4 V8 H3 Q0,8 0,5 V3 Q0,0 3,0 Z" fill="#c8a97e" stroke="#8b6340" strokeWidth="1.5" strokeLinejoin="round"/>
+            </svg>
           </div>
-        ))}
-      </AnimatePresence>
+        <AnimatePresence>
+          {creatures.map(creature => (
+            <div
+              key={creature.id}
+              className="fixed"
+              style={{
+                left: creature.x,
+                bottom: `calc(5rem + env(safe-area-inset-bottom) + ${Math.round(creature.y)}px - ${CREATURE_H - CREATURE_FOOT}px)`,
+                cursor: creature.isDragging ? 'grabbing' : 'grab',
+                zIndex: 9999,
+              }}
+              onPointerDown={e => handleCreaturePointerDown(e, creature.id)}
+            >
+              <motion.div
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 350, damping: 22 }}
+              >
+                <PoppleCharacter
+                  expression={creature.expression === 'sleeping' ? 'sleeping' : (creature.expression === 'angry' || creature.expression === 'ticking') ? creature.expression : creature.y > 10 && !creature.isDragging ? 'waiting' : creature.expression}
+                  mode={creature.isDragging || creature.y > 10 || creature.expression === 'sleeping' || creature.expression === 'angry' || creature.expression === 'ticking' ? 'idle' : 'walk'}
+                  pendingCount={0}
+                  accessory={equippedAcc}
+                  facingLeft={creature.vx < 0}
+                  onClick={() => {}}
+                  externalReaction={creature.externalReaction}
+                  size={80}
+                />
+              </motion.div>
+            </div>
+          ))}
+        </AnimatePresence>
+        </>,
+        document.body
+      )}
 
 
       {/* ── Accessory drawer ── */}

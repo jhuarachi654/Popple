@@ -265,6 +265,20 @@ html {
   image-rendering: pixelated;
 }
 
+/* Subtle notebook variant for chat — same lines at ~25% opacity, no margin rule */
+.pixel-notebook-chat {
+  background-color: #ffffff;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 31px,
+      rgba(147, 210, 230, 0.18) 31px,
+      rgba(147, 210, 230, 0.18) 32px
+    );
+  background-size: 100% 32px;
+}
+
 /* 8-bit Pixelated Notebook Paper Background - Accessibility Improved */
 .pixel-notebook {
   position: relative;

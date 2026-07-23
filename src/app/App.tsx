@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { Building2, Home, Cloud, PawPrint, X } from 'lucide-react';
 import TodoListScreen from './components/TodoListScreen';
 import GameScreen from './components/GameScreen';
-import TaskHistoryScreen from './components/TaskHistoryScreen';
+import DailyLogScreen from './components/DailyLogScreen';
 import SettingsScreen from './components/SettingsScreen';
 import NavigationBar from './components/NavigationBar';
 import LoginFlow from './components/LoginFlow';
@@ -28,6 +28,9 @@ export interface Todo {
   createdAt: Date;
   completedAt?: Date;
   destroyedAt?: Date;
+  dueDate?: string;
+  rescheduleCount?: number;
+  bucket?: 'today' | 'someday';
 }
 
 export interface DailyStats {
@@ -365,118 +368,122 @@ export default function App() {
   // Load guest data from localStorage
   const loadGuestData = () => {
     try {
-      // Load guest todos
-      const savedTodos = localStorage.getItem('lifelevel-guest-todos');
-      if (savedTodos) {
-        const parsedTodos = JSON.parse(savedTodos).map((todo: any) => ({
-          ...todo,
-          createdAt: new Date(todo.createdAt),
-          completedAt: todo.completedAt ? new Date(todo.completedAt) : undefined,
-          destroyedAt: todo.destroyedAt ? new Date(todo.destroyedAt) : undefined,
-        }));
-        
-        // If saved todos exist but array is empty, create example tasks
-        if (parsedTodos.length === 0) {
+      // Always show seed tasks for guest mode
+      localStorage.removeItem('lifelevel-guest-todos');
+      {
           const now = new Date();
           const initialTodos: Todo[] = [
-            // Active tasks for the todo list
             {
               id: 'example-1',
-              text: 'Buy fresh groceries',
+              text: 'Submit portfolio project',
               completed: false,
-              createdAt: new Date(now.getTime() - 60000), // 1 minute ago
+              priority: true,
+              dueDate: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+              notes: 'Final review, then upload to the class portal before midnight.',
+              createdAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000),
             },
             {
-              id: 'example-2', 
+              id: 'example-2',
               text: 'Call the dentist',
               completed: false,
-              createdAt: new Date(now.getTime() - 30000), // 30 seconds ago
+              priority: true,
+              dueDate: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+              createdAt: new Date(now.getTime() - 60 * 60 * 1000),
             },
             {
               id: 'example-3',
+              text: 'Buy fresh groceries',
+              completed: false,
+              notes: 'Oat milk, sourdough, eggs, spinach',
+              createdAt: new Date(now.getTime() - 30 * 60 * 1000),
+            },
+            {
+              id: 'example-4',
               text: 'Pay monthly bills',
               completed: false,
-              createdAt: now,
-            },
-            // Completed tasks for the game screen - so guests can experience the core mechanic
-            {
-              id: 'example-completed-1',
-              text: 'Do laundry',
-              completed: true,
-              createdAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-              completedAt: new Date(now.getTime() - 24 * 60 * 60 * 1000), // 1 day ago
+              dueDate: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+              createdAt: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000),
             },
             {
-              id: 'example-completed-2',
-              text: 'Clean kitchen',
-              completed: true,
-              createdAt: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-              completedAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+              id: 'example-5',
+              text: 'Read 20 pages',
+              completed: false,
+              bucket: 'someday',
+              createdAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
             },
             {
-              id: 'example-completed-3',
+              id: 'example-6',
               text: 'Reply to emails',
-              completed: true,
-              createdAt: new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000), // 4 days ago
-              completedAt: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-            }
+              completed: false,
+              createdAt: new Date(now.getTime() - 10 * 60 * 1000),
+            },
+            {
+              id: 'example-7',
+              text: 'Schedule haircut',
+              completed: false,
+              dueDate: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+              createdAt: new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000),
+            },
+            {
+              id: 'example-8',
+              text: 'Water the plants',
+              completed: false,
+              priority: true,
+              createdAt: new Date(now.getTime() - 20 * 60 * 1000),
+            },
+            {
+              id: 'example-9',
+              text: 'Back up laptop',
+              completed: false,
+              bucket: 'someday',
+              notes: 'Time Machine to external drive',
+              createdAt: new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000),
+            },
+            {
+              id: 'example-10',
+              text: 'Research flight prices',
+              completed: false,
+              bucket: 'someday',
+              createdAt: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
+            },
+            {
+              id: 'example-11',
+              text: 'Fix bike tire',
+              completed: false,
+              createdAt: new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000),
+            },
+            {
+              id: 'example-12',
+              text: 'Pick up prescription',
+              completed: false,
+              dueDate: new Date(now.getTime() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+              createdAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
+            },
+            // Completed tasks — deliberate time-of-day spread for insight demo
+            // Helper: date X days ago at a specific hour
+            ...(() => {
+              const at = (daysBack: number, hour: number) => {
+                const d = new Date(now); d.setDate(d.getDate() - daysBack); d.setHours(hour, 15, 0, 0); return d;
+              };
+              return [
+                { id: 'ec-1',  text: 'Reply to professor\'s email',       completed: true, createdAt: at(10, 20), completedAt: at(9,  8)  },
+                { id: 'ec-2',  text: 'Submit tax documents',               completed: true, createdAt: at(15, 10), completedAt: at(14, 9)  },
+                { id: 'ec-3',  text: 'Pick up prescription',               completed: true, createdAt: at(8,  17), completedAt: at(7,  10) },
+                { id: 'ec-4',  text: 'Research health insurance options',  completed: true, createdAt: at(20, 11), completedAt: at(14, 8)  },
+                { id: 'ec-5',  text: 'Send thank you email to recruiter',  completed: true, createdAt: at(12, 19), completedAt: at(11, 9)  },
+                { id: 'ec-6',  text: 'Pay phone bill',                     completed: true, createdAt: at(6,  16), completedAt: at(5,  8)  },
+                { id: 'ec-7',  text: 'Buy groceries',                      completed: true, createdAt: at(5,  9),  completedAt: at(4,  10) },
+                { id: 'ec-8',  text: 'Look up flight prices to NYC',       completed: true, createdAt: at(18, 14), completedAt: at(12, 14) },
+                { id: 'ec-9',  text: 'Do laundry',                         completed: true, createdAt: at(3,  8),  completedAt: at(2,  14) },
+                { id: 'ec-10', text: 'Clean kitchen',                      completed: true, createdAt: at(2,  9),  completedAt: at(1,  15) },
+                { id: 'ec-11', text: 'Book dentist appointment',           completed: true, createdAt: at(25, 12), completedAt: at(19, 19) },
+                { id: 'ec-12', text: 'Send invoice',                       completed: true, createdAt: at(4,  18), completedAt: at(3,  8)  },
+              ] as Todo[];
+            })(),
           ];
           setTodos(initialTodos);
           setDailyStats(generateDailyStats(initialTodos));
-          // Save the initial example tasks to localStorage
           localStorage.setItem('lifelevel-guest-todos', JSON.stringify(initialTodos));
-        } else {
-          setTodos(parsedTodos);
-          setDailyStats(generateDailyStats(parsedTodos));
-        }
-      } else {
-        // Set example tasks for new guest users
-        const now = new Date();
-        const initialTodos: Todo[] = [
-          // Active tasks for the todo list
-          {
-            id: 'example-1',
-            text: 'Buy fresh groceries',
-            completed: false,
-            createdAt: new Date(now.getTime() - 60000), // 1 minute ago
-          },
-          {
-            id: 'example-2', 
-            text: 'Call the dentist',
-            completed: false,
-            createdAt: new Date(now.getTime() - 30000), // 30 seconds ago
-          },
-          {
-            id: 'example-3',
-            text: 'Pay monthly bills',
-            completed: false,
-            createdAt: now,
-          },
-          // Completed tasks for the game screen - so guests can experience the core mechanic
-          {
-            id: 'example-completed-1',
-            text: 'Do laundry',
-            completed: true,
-            createdAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-            completedAt: new Date(now.getTime() - 24 * 60 * 60 * 1000), // 1 day ago
-          },
-          {
-            id: 'example-completed-2',
-            text: 'Clean kitchen',
-            completed: true,
-            createdAt: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-            completedAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-          },
-          {
-            id: 'example-completed-3',
-            text: 'Reply to emails',
-            completed: true,
-            createdAt: new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000), // 4 days ago
-            completedAt: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-          }
-        ];
-        setTodos(initialTodos);
-        setDailyStats(generateDailyStats(initialTodos));
       }
 
       // Load guest progress
@@ -797,12 +804,13 @@ export default function App() {
     saveProgress(updatedProgress);
   };
 
-  const addTodo = (text: string) => {
+  const addTodo = (text: string, dueDate?: string) => {
     const newTodo: Todo = {
       id: Date.now().toString(),
       text,
       completed: false,
       createdAt: new Date(),
+      ...(dueDate ? { dueDate } : {}),
     };
     
     const updatedTodos = [newTodo, ...todos];
@@ -831,6 +839,16 @@ export default function App() {
     saveTasks(updatedTodos);
     
     // Note: XP is now only awarded when tasks are destroyed in the game screen
+  };
+
+  const updateTodoDueDate = (id: string, dueDate: string | undefined) => {
+    const updatedTodos = todos.map(todo =>
+      todo.id === id
+        ? { ...todo, dueDate, rescheduleCount: dueDate && todo.dueDate && dueDate !== todo.dueDate ? (todo.rescheduleCount ?? 0) + 1 : todo.rescheduleCount }
+        : todo
+    );
+    setTodos(updatedTodos);
+    saveTasks(updatedTodos);
   };
 
   const editTodo = (id: string, newText: string) => {
@@ -1068,8 +1086,8 @@ export default function App() {
     >
       {/* Immersive Game Background */}
       {currentTheme.image && (
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat pixelated"
+        <div
+          className="fixed inset-0 bg-cover bg-center bg-no-repeat pixelated"
           style={{ 
             backgroundImage: `url(${currentTheme.image})`,
             backgroundSize: 'cover',
@@ -1087,7 +1105,7 @@ export default function App() {
       {/* Fallback glass morphism background if no image */}
       {!currentTheme.image && (
         <div
-          className="absolute inset-0 bg-gradient-to-br from-cyan-50 via-blue-50 to-indigo-100"
+          className="fixed inset-0 bg-gradient-to-br from-cyan-50 via-blue-50 to-indigo-100"
           style={{ top: 'calc(-1 * max(env(safe-area-inset-top), 50px))' }}
         >
           <div className="absolute inset-0 opacity-30">
@@ -1100,30 +1118,6 @@ export default function App() {
       )}
       
       {/* Fixed Top Navigation */}
-      {/* Guest mode banner — shown above nav until dismissed */}
-      {isGuestMode && !guestBannerDismissed && activeScreen !== 'game' && (
-        <div
-          className="fixed left-0 right-0 z-40 bg-gray-900/95 backdrop-blur-sm border-t border-gray-700/50 px-4 py-2 flex items-center gap-3"
-          style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
-        >
-          <p className="font-space-mono text-[10px] text-gray-400 flex-1 leading-snug">
-            Guest mode — your progress won't be saved.
-          </p>
-          <button
-            onClick={handleLogout}
-            className="font-pixel text-[9px] text-cyan-400 hover:text-cyan-300 transition-colors whitespace-nowrap flex-shrink-0"
-          >
-            Create account
-          </button>
-          <button
-            onClick={() => setGuestBannerDismissed(true)}
-            className="text-gray-500 hover:text-gray-300 transition-colors flex-shrink-0"
-            aria-label="Dismiss"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
 
       <NavigationBar
         activeScreen={activeScreen}
@@ -1153,15 +1147,9 @@ export default function App() {
       />
       
       {/* Screen Content with bottom padding to account for fixed navbar + safe area */}
-      <motion.div 
-        className="flex-1 relative z-10 min-h-0"
-        style={{
-          paddingBottom: `calc(5rem + env(safe-area-inset-bottom))`
-        }}
+      <div
+        className="flex-1 relative min-h-0"
         key={activeScreen}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
       >
         {activeScreen === 'todos' && (
           <TodoListScreen
@@ -1170,6 +1158,7 @@ export default function App() {
             onToggleTodo={toggleTodo}
             onEditTodo={editTodo}
             onUpdateNotes={updateTodoNotes}
+            onUpdateDueDate={updateTodoDueDate}
             onTogglePriority={toggleTodoPriority}
             onReorderTodos={reorderTodos}
             onDeleteTodo={deleteTodo}
@@ -1194,9 +1183,10 @@ export default function App() {
         )}
         
         {activeScreen === 'log' && (
-          <TaskHistoryScreen
+          <DailyLogScreen
             todos={todos}
             onRestoreTask={restoreTask}
+            isGuestMode={isGuestMode}
           />
         )}
 
@@ -1211,7 +1201,7 @@ export default function App() {
             }}
           />
         )}
-      </motion.div>
+      </div>
     </div>
   );
 }
