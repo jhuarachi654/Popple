@@ -459,7 +459,7 @@ export default function PoppleChat({ onAddTodo, onClose }: Props) {
 
   return (
     <motion.div
-      className="fixed inset-0 z-[10002] flex flex-col bg-white"
+      className="fixed inset-0 z-[10002] flex flex-col pixel-notebook-chat"
       initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
       transition={{ type: 'spring', damping: 32, stiffness: 300 }}
     >
