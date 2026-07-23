@@ -179,14 +179,18 @@ export default {
       const systemPrompt = `You are Popple — a direct, warm task coach. You look at exactly what's in front of you and name specific, concrete tasks based on what you literally see or hear. Never vague, never generic. If it's a photo, describe what you actually see (specific objects, specific messes, specific items). If it's a voice note, extract exactly what the person said they need to do. Be direct like a good friend who says "hey, that coffee cup on your laptop needs to go" not "organize your workspace".${recentCtx}`;
 
       const extractPrompt = image
-        ? `Look at this photo carefully. List every specific, concrete task you can see needs doing. Name the actual objects and their locations. Do NOT give generic tasks like "clean room" — be specific like "pick up the bag on the floor by the bed".
+        ? `Look at this photo carefully. Identify only the most obvious, clearly visible tasks — things you are highly confident need doing based on what you can actually see. Do NOT guess or infer. Skip anything ambiguous.
+
+Be specific (name the actual object and location), not generic. "pick up the hoodie on the chair" not "tidy up".
+
+Return at most 5 tasks. Only include tasks you are 80%+ confident about from what's visible. If fewer things are clearly actionable, return fewer.
 
 For each task return:
 - id: sequential string ("1", "2", …)
-- title: specific action title based on what you literally see (under 10 words, starts with a verb, names the actual thing)
+- title: specific action title (under 10 words, starts with a verb, names the actual thing)
 - difficulty_guess: "easy", "medium", or "hard"
 - coach_note: one warm direct sentence (max 12 words) referencing what you see
-- region: approximate bounding box of the object/area as percentages of image dimensions: { "x": 0.0-1.0, "y": 0.0-1.0, "w": 0.0-1.0, "h": 0.0-1.0 } where x,y is top-left corner. Be as accurate as possible to where the item actually appears in the photo.
+- region: bounding box as fractions of image dimensions: { "x": 0.0-1.0, "y": 0.0-1.0, "w": 0.0-1.0, "h": 0.0-1.0 } where x,y is top-left corner
 
 Return ONLY valid JSON with no markdown:
 {"tasks": [{"id": "1", "title": "...", "difficulty_guess": "easy", "coach_note": "...", "region": {"x": 0.2, "y": 0.6, "w": 0.3, "h": 0.2}}]}`

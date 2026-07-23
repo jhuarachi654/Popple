@@ -195,7 +195,7 @@ function ChatBubble({ msg, onAddTodo, onUseSample, accessory }: { msg: ChatMessa
 
       <div className="flex flex-col gap-1.5 flex-1 min-w-0">
         {msg.text && (
-          <p className="font-space-mono text-base text-gray-800 leading-relaxed pt-2">
+          <p className="min-w-[96px] font-space-mono text-base text-gray-800 leading-relaxed pt-2">
             {msg.text}
           </p>
         )}
