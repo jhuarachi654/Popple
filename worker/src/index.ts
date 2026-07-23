@@ -1,7 +1,7 @@
 export interface Env {
   POPPLE_DATA: KVNamespace;
   AUTH_SECRET: string;
-  ANTHROPIC_API_KEY: string;
+  OPENAI_API_KEY: string;
 }
 
 const CORS_HEADERS = {
@@ -159,6 +159,78 @@ export default {
       const { hash, salt } = await hashPassword(password);
       await env.POPPLE_DATA.put(`user:${userId}`, JSON.stringify({ ...stored, hash, salt }));
       return json({ success: true });
+    }
+
+    // ── AI: coach task extraction (no auth required) ──────────────────────────
+    if (path === '/ai/extract-tasks' && request.method === 'POST') {
+      const body = await request.json() as {
+        transcript?: string;
+        image?: string;
+        mimeType?: string;
+        recentActivity?: string[];
+      };
+      const { transcript, image, mimeType = 'image/jpeg', recentActivity = [] } = body;
+      if (!transcript && !image) return json({ error: 'No input provided' }, 400);
+
+      const recentCtx = recentActivity.length > 0
+        ? ` For context, this person recently worked on: ${recentActivity.slice(-5).join(', ')}.`
+        : '';
+
+      const systemPrompt = `You are Popple — a direct, warm task coach. You look at exactly what's in front of you and name specific, concrete tasks based on what you literally see or hear. Never vague, never generic. If it's a photo, describe what you actually see (specific objects, specific messes, specific items). If it's a voice note, extract exactly what the person said they need to do. Be direct like a good friend who says "hey, that coffee cup on your laptop needs to go" not "organize your workspace".${recentCtx}`;
+
+      const extractPrompt = image
+        ? `Look at this photo carefully. List every specific, concrete task you can see needs doing. Name the actual objects and their locations. Do NOT give generic tasks like "clean room" — be specific like "pick up the bag on the floor by the bed".
+
+For each task return:
+- id: sequential string ("1", "2", …)
+- title: specific action title based on what you literally see (under 10 words, starts with a verb, names the actual thing)
+- difficulty_guess: "easy", "medium", or "hard"
+- coach_note: one warm direct sentence (max 12 words) referencing what you see
+- region: approximate bounding box of the object/area as percentages of image dimensions: { "x": 0.0-1.0, "y": 0.0-1.0, "w": 0.0-1.0, "h": 0.0-1.0 } where x,y is top-left corner. Be as accurate as possible to where the item actually appears in the photo.
+
+Return ONLY valid JSON with no markdown:
+{"tasks": [{"id": "1", "title": "...", "difficulty_guess": "easy", "coach_note": "...", "region": {"x": 0.2, "y": 0.6, "w": 0.3, "h": 0.2}}]}`
+        : `Extract every task from this voice note. Use the person's exact words and intent — don't paraphrase or generalize.
+
+Voice note: "${transcript}"
+
+For each task return:
+- id: sequential string ("1", "2", …)
+- title: clean action title using their words (under 8 words, starts with a verb)
+- difficulty_guess: "easy", "medium", or "hard"
+- coach_note: one warm direct sentence (max 12 words)
+
+Return ONLY valid JSON with no markdown:
+{"tasks": [{"id": "1", "title": "...", "difficulty_guess": "easy", "coach_note": "..."}]}`;
+
+      const userContent: unknown[] = [];
+      if (image) {
+        userContent.push({ type: 'image_url', image_url: { url: `data:${mimeType};base64,${image}` } });
+      }
+      userContent.push({ type: 'text', text: extractPrompt });
+
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.OPENAI_API_KEY}` },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          max_tokens: 1000,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userContent },
+          ],
+        }),
+      });
+
+      const data = await res.json() as any;
+      const raw = data?.choices?.[0]?.message?.content?.trim() ?? '{"tasks":[]}';
+      try {
+        return json(JSON.parse(raw));
+      } catch {
+        const match = raw.match(/\{[\s\S]*\}/);
+        if (match) { try { return json(JSON.parse(match[0])); } catch {} }
+        return json({ tasks: [] });
+      }
     }
 
     // ── Protected routes ──────────────────────────────────────────────────────
